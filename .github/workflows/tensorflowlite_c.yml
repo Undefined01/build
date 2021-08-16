@@ -1,0 +1,76 @@
+name: tensorflowlite_c
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version of tensorflow
+        required: true
+        default: v2.6.0
+
+jobs:
+  tensorflowlite_c:
+    strategy:
+      matrix:
+        include:
+          - name: linux_amd64
+            os: ubuntu-latest
+          - name: windows_x64_without_xnnpack
+            os: windows-latest
+            EXTRA_CONFIGURE: >-
+              -A "x64"
+              -D CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
+              -D TFLITE_ENABLE_XNNPACK=OFF
+          - name: windows_x64
+            os: windows-latest
+            EXTRA_CONFIGURE: >-
+              -A "x64"
+              -D CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
+              -D CMAKE_C_FLAGS="-D WIN32_LEAN_AND_MEAN=1 /EHsc"
+              -D CMAKE_CXX_FLAGS="-D WIN32_LEAN_AND_MEAN=1 /EHsc"
+          - name: windows_x86
+            os: windows-latest
+            EXTRA_CONFIGURE: >-
+              -A "Win32"
+              -D CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
+              -D CMAKE_C_FLAGS="-D WIN32_LEAN_AND_MEAN=1 /EHsc"
+              -D CMAKE_CXX_FLAGS="-D WIN32_LEAN_AND_MEAN=1 /EHsc"
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    env:
+      SRC: ${{ github.workspace }}/tensorflow
+      BUILD: ${{ github.workspace }}/tensorflow_build
+      VERSION: ${{ github.event.inputs.version }}
+      CONFIGURE: >-
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_INSTALL_PREFIX=install
+      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: tensorflow/tensorflow
+          ref: ${{ env.VERSION }}
+          path: ${{ env.SRC }}
+
+      - name: Configure
+        run: |
+          mkdir ${{ env.BUILD }}
+          cd ${{ env.BUILD }}
+          cmake ${{ env.SRC }}/tensorflow/lite/c ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
+
+      - name: Build
+        working-directory: ${{ env.BUILD }}
+        run: |
+          cmake --build . --target install --config Release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          path: |
+            ${{ env.BUILD }}/libtensorflowlite_c.so
+            ${{ env.BUILD }}/Release

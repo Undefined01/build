@@ -1,0 +1,211 @@
+name: OpenCvSharpExtern
+
+on:
+  workflow_dispatch:
+    inputs:
+      opencv-version:
+        description: The version of OpenCV
+        required: true
+        default: 4.5.3
+      opencvsharp-version:
+        description: The version of OpenCvSharp
+        required: true
+        default: 4.5.3.20210725
+
+jobs:
+  opencv:
+    strategy:
+      matrix:
+        include:
+          - name: linux_amd64
+            os: ubuntu-latest
+          - name: windows_x64
+            os: windows-latest
+            EXTRA_CONFIGURE: >-
+              -G "Visual Studio 16 2019"
+              -A "x64"
+
+    name: "OpenCV ${{ matrix.name }}"
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    env:
+      VERSION: ${{ github.event.inputs.opencv-version }}
+      SRC: ${{ github.workspace }}/opencv
+      BUILD: ${{ github.workspace }}/build
+      CONFIGURE: >-
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_INSTALL_PREFIX=install
+        -D BUILD_SHARED_LIBS=OFF
+        -D ENABLE_CXX11=1
+        -D INSTALL_C_EXAMPLES=OFF
+        -D INSTALL_PYTHON_EXAMPLES=OFF
+        -D OPENCV_ENABLE_NONFREE=OFF
+        -D BUILD_ANDROID_PROJECTS=OFF
+        -D BUILD_ANDROID_EXAMPLES=OFF
+        -D BUILD_DOCS=OFF
+        -D BUILD_WITH_DEBUG_INFO=OFF
+        -D BUILD_EXAMPLES=OFF
+        -D BUILD_TESTS=OFF
+        -D BUILD_PERF_TESTS=OFF
+        -D BUILD_JAVA=OFF
+        -D BUILD_TIFF=OFF
+        -D BUILD_WEBP=OFF
+        -D BUILD_IPP_IW=OFF
+        -D BUILD_ITT=OFF
+        -D BUILD_opencv_apps=OFF
+        -D BUILD_opencv_calib3d=OFF
+        -D BUILD_opencv_datasets=OFF
+        -D BUILD_opencv_dnn=OFF 
+        -D BUILD_opencv_features2d=OFF
+        -D BUILD_opencv_flann=OFF
+        -D BUILD_opencv_freetype=OFF
+        -D BUILD_opencv_gapi=OFF
+        -D BUILD_opencv_highgui=OFF
+        -D BUILD_opencv_java_bindings_generator=OFF
+        -D BUILD_opencv_js=OFF
+        -D BUILD_opencv_js_bindings_generator=OFF
+        -D BUILD_opencv_ml=OFF
+        -D BUILD_opencv_objdetect=OFF
+        -D BUILD_opencv_objc_bindings_generator=OFF
+        -D BUILD_opencv_photo=OFF
+        -D BUILD_opencv_python_bindings_generator=OFF
+        -D BUILD_opencv_python_tests=OFF
+        -D BUILD_opencv_shape=OFF
+        -D BUILD_opencv_stitching=OFF
+        -D BUILD_opencv_ts=OFF
+        -D BUILD_opencv_video=OFF
+        -D BUILD_opencv_videoio=OFF
+        -D BUILD_opencv_videostab=OFF
+        -D BUILD_opencv_world=OFF
+        -D WITH_MSMF=OFF
+        -D WITH_MSMF_DXVA=OFF
+        -D WITH_QT=OFF
+        -D WITH_FREETYPE=OFF
+        -D WITH_TESSERACT=OFF
+        -D WITH_CUDA=OFF
+        -D WITH_DIRECTX=OFF
+        -D WITH_IPP=OFF
+        -D WITH_ITT=OFF
+        -D WITH_VTK=OFF
+        -D WITH_JASPER=OFF
+        -D WITH_OPENCL=OFF
+        -D WITH_OPENCLAMDBLAS=OFF
+        -D WITH_OPENCLAMDFFT=OFF
+        -D WITH_OPENCL_D3D11_NV=OFF
+        -D WITH_QUIRC=OFF
+        -D WITH_ADE=OFF
+        -D WITH_1394=OFF
+        -D WITH_FFMPEG=OFF
+        -D WITH_WEBP=OFF
+        -D WITH_TIFF=OFF
+        -D WITH_PNG=ON
+        -D WITH_OPENEXR=OFF
+        -D WITH_PROTOBUF=OFF
+        -D WITH_GSTREAMER=OFF
+        -D WITH_IMGCODEC_SUNRASTER=OFF
+      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: opencv/opencv
+          ref: ${{ env.VERSION }}
+          path: ${{ env.SRC }}
+
+      - name: Configure
+        run: |
+          mkdir ${{ env.BUILD }}
+          cd ${{ env.BUILD }}
+          cmake ${{ env.SRC }} ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
+
+      - name: List build options
+        working-directory: ${{ env.BUILD }}
+        run: |
+          cmake -LA ${{ env.SRC }}
+
+      - name: Build
+        working-directory: ${{ env.BUILD }}
+        run: |
+          cmake --build . --target install --config Release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          path: ${{ env.BUILD }}/install
+
+  opencvsharp:
+    strategy:
+      matrix:
+        include:
+          - name: linux_amd64
+            os: ubuntu-latest
+            OPENCV_LIB: lib/cmake/opencv4
+          - name: windows_x64
+            os: windows-latest
+            OPENCV_LIB: x64/vc16/staticlib
+            EXTRA_CONFIGURE: >-
+              -G "Visual Studio 16 2019"
+              -A "x64"
+
+    name: "OpenCvSharp ${{ matrix.name }}"
+    needs: opencv
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    env:
+      VERSION: ${{ github.event.inputs.opencvsharp-version }}
+      SRC: ${{ github.workspace }}/opencvsharp
+      BUILD: ${{ github.workspace }}/build
+      OPENCV: ${{ github.workspace }}/opencv
+      OPENCV_LIB: ${{ github.workspace }}/opencv/${{ matrix.OPENCV_LIB }}
+      OPENCV_VERSION: ${{ github.event.inputs.opencv-version }}
+      CONFIGURE: >-
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_INSTALL_PREFIX=install
+      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: shimat/opencvsharp
+          ref: ${{ env.VERSION }}
+          path: ${{ env.SRC }}
+
+      - name: Download OpenCV build
+        uses: actions/download-artifact@v2
+        with:
+          name: opencv-${{ env.OPENCV_VERSION }}-${{ matrix.name }}
+          path: ${{ env.OPENCV }}
+
+      - name: Remove unused sources
+        working-directory: ${{ env.SRC }}/src/OpenCvSharpExtern
+        shell: bash
+        run: |
+          rm aruco.cpp bgsegm.cpp calib3d.cpp cuda.cpp dnn.cpp dnn_superres.cpp \
+            face.cpp features2d.cpp flann.cpp highgui.cpp img_hash.cpp line_descriptor.cpp \
+            ml.cpp objdetect.cpp optflow.cpp photo.cpp quality.cpp shape.cpp stitching.cpp \
+            superres.cpp text.cpp tracking.cpp video.cpp videoio.cpp xfeatures2d.cpp ximgproc.cpp xphoto.cpp \
+            std_vector.cpp std_string.cpp
+          sed -i include_opencv.h -e '32,36d' -e '38,77d'
+          ls *.cpp
+
+      - name: Configure with CMake
+        run: |
+          mkdir ${{ env.BUILD }}
+          cd ${{ env.BUILD }}
+          cmake ${{ env.SRC }}/src/OpenCvSharpExtern ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
+        env:
+          OpenCV_DIR: ${{ env.OPENCV_LIB }}
+
+      - name: Build
+        working-directory: ${{ env.BUILD }}
+        run: |
+          cmake --build . --target install --config Release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          path: ${{ env.BUILD }}/install
