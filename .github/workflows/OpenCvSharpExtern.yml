@@ -187,7 +187,7 @@ jobs:
             ml.cpp objdetect.cpp optflow.cpp photo.cpp quality.cpp shape.cpp stitching.cpp \
             superres.cpp text.cpp tracking.cpp video.cpp videoio.cpp xfeatures2d.cpp ximgproc.cpp xphoto.cpp \
             std_vector.cpp std_string.cpp
-          sed -i'' -e '32,36d' -e '38,77d' include_opencv.h
+          sed -e '32,36d' -e '38,77d' -i'' include_opencv.h
           ls *.cpp
 
       - name: Configure with CMake
