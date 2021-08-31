@@ -61,5 +61,6 @@ jobs:
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
           path: |
+            ${{ env.BUILD }}/libtensorflowlite_c.dylib
             ${{ env.BUILD }}/libtensorflowlite_c.so
-            ${{ env.BUILD }}/Release
+            ${{ env.BUILD }}/Release/tensorflowlite_c.dll
