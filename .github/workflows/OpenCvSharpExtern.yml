@@ -21,7 +21,7 @@ jobs:
             os: macos-latest
           - name: linux_amd64
             os: ubuntu-latest
-          - name: windows_x64
+          - name: windows_amd64
             os: windows-latest
 
     name: "OpenCV ${{ matrix.name }}"
@@ -144,7 +144,7 @@ jobs:
           - name: linux_amd64
             os: ubuntu-latest
             OPENCV_LIB: lib/cmake/opencv4
-          - name: windows_x64
+          - name: windows_amd64
             os: windows-latest
             OPENCV_LIB: x64/vc16/staticlib
 
@@ -187,7 +187,12 @@ jobs:
             ml.cpp objdetect.cpp optflow.cpp photo.cpp quality.cpp shape.cpp stitching.cpp \
             superres.cpp text.cpp tracking.cpp video.cpp videoio.cpp xfeatures2d.cpp ximgproc.cpp xphoto.cpp \
             std_vector.cpp std_string.cpp
-          sed -i include_opencv.h -e '32,36d' -e '38,77d'
+          if [ "RUNNER_OS" == "macOS" ]; then
+            # macOS use BSD sed which is different from GNU sed
+            sed -i '' include_opencv.h -e '32,36d' -e '38,77d'
+          else
+            sed -i include_opencv.h -e '32,36d' -e '38,77d'
+          fi
           ls *.cpp
 
       - name: Configure with CMake
