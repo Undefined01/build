@@ -17,13 +17,12 @@ jobs:
     strategy:
       matrix:
         include:
+          - name: macos_amd64
+            os: macos-latest
           - name: linux_amd64
             os: ubuntu-latest
           - name: windows_x64
             os: windows-latest
-            EXTRA_CONFIGURE: >-
-              -G "Visual Studio 16 2019"
-              -A "x64"
 
     name: "OpenCV ${{ matrix.name }}"
     runs-on: ${{ matrix.os }}
@@ -139,15 +138,15 @@ jobs:
     strategy:
       matrix:
         include:
+          - name: macos_amd64
+            os: macos-latest
+            OPENCV_LIB: lib/cmake/opencv4
           - name: linux_amd64
             os: ubuntu-latest
             OPENCV_LIB: lib/cmake/opencv4
           - name: windows_x64
             os: windows-latest
             OPENCV_LIB: x64/vc16/staticlib
-            EXTRA_CONFIGURE: >-
-              -G "Visual Studio 16 2019"
-              -A "x64"
 
     name: "OpenCvSharp ${{ matrix.name }}"
     needs: opencv
