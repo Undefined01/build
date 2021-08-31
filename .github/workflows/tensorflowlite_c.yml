@@ -11,34 +11,23 @@ on:
 jobs:
   tensorflowlite_c:
     strategy:
+      fail-fast: false
       matrix:
         include:
+          - name: mac_amd64
+            os: macos-latest
           - name: linux_amd64
             os: ubuntu-latest
-          - name: windows_x64_without_xnnpack
+          - name: windows_amd64
             os: windows-latest
             EXTRA_CONFIGURE: >-
               -A "x64"
-              -D CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
-              -D TFLITE_ENABLE_XNNPACK=OFF
-          - name: windows_x64
-            os: windows-latest
-            EXTRA_CONFIGURE: >-
-              -A "x64"
-              -D CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
-              -D CMAKE_C_FLAGS="-D WIN32_LEAN_AND_MEAN=1 /EHsc"
-              -D CMAKE_CXX_FLAGS="-D WIN32_LEAN_AND_MEAN=1 /EHsc"
-          - name: windows_x86
-            os: windows-latest
-            EXTRA_CONFIGURE: >-
-              -A "Win32"
               -D CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
               -D CMAKE_C_FLAGS="-D WIN32_LEAN_AND_MEAN=1 /EHsc"
               -D CMAKE_CXX_FLAGS="-D WIN32_LEAN_AND_MEAN=1 /EHsc"
 
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: true
 
     env:
       SRC: ${{ github.workspace }}/tensorflow
