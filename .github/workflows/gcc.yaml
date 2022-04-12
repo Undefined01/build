@@ -33,6 +33,7 @@ jobs:
         --enable-languages=c,c++
         --enable-threads=posix
         --enable-checking=release
+        --disable-multilib
         --with-system-zlib
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
