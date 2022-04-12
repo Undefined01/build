@@ -41,7 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          repository: opencv/opencv
+          repository: gcc-mirror/gcc
           ref: ${{ env.VERSION }}
           path: ${{ env.SRC }}
           
@@ -51,17 +51,17 @@ jobs:
           ./contrib/download_prerequisites
 
       - name: Configure
-        working-directory: ${{ env.SRC }}
+        working-directory: ${{ env.BUILD }}
         run: |
-          ./configure ${{ env.CONFIGURE }}
+          ${{ env.BUILD }}/configure ${{ env.CONFIGURE }}
 
       - name: Build
-        working-directory: ${{ env.SRC }}
+        working-directory: ${{ env.BUILD }}
         run: |
           make -j 16
       
       - name: Install
-        working-directory: ${{ env.SRC }}
+        working-directory: ${{ env.BUILD }}
         run: |
           make install
 
