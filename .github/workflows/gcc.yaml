@@ -1,0 +1,72 @@
+name: OpenCvSharpExtern
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version of GCC
+        required: true
+        default: releases/gcc-11.2.0
+      install_path:
+        description: The version of GCC
+        required: true
+        default: /opt/gcc-11
+
+jobs:
+  gcc:
+    strategy:
+      matrix:
+        include:
+          - name: linux_amd64
+            os: ubuntu-latest
+
+    name: "GCC ${{ matrix.name }}"
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+      SRC: ${{ github.workspace }}/gcc
+      BUILD: ${{ github.workspace }}/build
+      CONFIGURE: >-
+        --prefix=${{ github.event.inputs.install_path }}
+        --enable-bootstrap
+        --enable-languages=c,c++
+        --enable-threads=posix
+        --enable-checking=release
+        --enable-multilib
+        --with-system-zlib
+      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: opencv/opencv
+          ref: ${{ env.VERSION }}
+          path: ${{ env.SRC }}
+          
+      - name: Download dependencies
+        working-directory: ${{ env.SRC }}
+        run: |
+          ./contrib/download_prerequisites
+
+      - name: Configure
+        working-directory: ${{ env.SRC }}
+        run: |
+          ./configure ${{ env.CONFIGURE }}
+
+      - name: Build
+        working-directory: ${{ env.SRC }}
+        run: |
+          make -j 16
+      
+      - name: Install
+        working-directory: ${{ env.SRC }}
+        run: |
+          make install
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          path: ${{ github.event.inputs.version }}
