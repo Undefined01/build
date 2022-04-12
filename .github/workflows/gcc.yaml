@@ -45,6 +45,10 @@ jobs:
           ref: ${{ env.VERSION }}
           path: ${{ env.SRC }}
           
+      - name: Create build directory
+        run: |
+          mkdir ${{ env.BUILD }}
+          
       - name: Download dependencies
         working-directory: ${{ env.SRC }}
         run: |
