@@ -1,4 +1,4 @@
-name: OpenCvSharpExtern
+name: GCC
 
 on:
   workflow_dispatch:
