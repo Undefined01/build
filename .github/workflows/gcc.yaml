@@ -30,6 +30,7 @@ jobs:
       BUILD: ${{ github.workspace }}/build
       CONFIGURE: >-
         --prefix=${{ github.event.inputs.install_path }}
+        --enable-bootstrap
         --enable-languages=c,c++
         --enable-threads=posix
         --enable-checking=release
