@@ -1,0 +1,70 @@
+name: glibc
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version of glibc
+        required: true
+        default: 2.35
+
+jobs:
+  gcc:
+    strategy:
+      matrix:
+        include:
+          - name: linux_amd64
+            os: ubuntu-latest
+
+    name: "GCC ${{ matrix.name }}"
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+      SRC: ${{ github.workspace }}/glibc
+      BUILD: ${{ github.workspace }}/build
+      CONFIGURE: >-
+        --prefix=/usr
+        --enable-kernel=4.15
+        --with-headers=/opt/glibc/usr/include
+        libc_cv_slibdir=/opt/glibc/usr/lib
+      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
+
+    steps:
+      - name: Download sources
+        run: |
+          curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ env.VERSION }}.tar.xz -o glibc.tar.xz
+          tar -xJf glibc.tar.xz
+          ls
+          
+      - name: Create build directory
+        run: |
+          mkdir -p ${{ env.BUILD }}
+          mkdir -p /opt/glib/usr
+
+      - name: Configure
+        working-directory: ${{ env.BUILD }}
+        run: |
+          ${{ env.SRC }}/configure ${{ env.CONFIGURE }}
+
+      - name: Build
+        working-directory: ${{ env.BUILD }}
+        run: |
+          make -j 16
+      
+      - name: Install
+        working-directory: ${{ env.BUILD }}
+        run: |
+          make DESTDIR=/opt/glibc install
+      
+      - name: Archive
+        working-directory: /opt
+        run: |
+          tar -cJvf glibc.tar.xz /opt/glibc
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          path: /opt/glibc.tar.xz
