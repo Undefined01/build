@@ -35,6 +35,7 @@ jobs:
     env:
       VERSION: ${{ github.event.inputs.version }}
       KERNEL_URL: ${{ github.event.inputs.kernel_url }}
+      KERNEL_HEADERS: ${{ github.event.inputs.kernel_headers }}
       SRC: ${{ github.workspace }}/src
       BUILD: ${{ github.workspace }}/build
       DIST: ${{ github.event.inputs.dist }}
@@ -55,7 +56,7 @@ jobs:
           curl -sSL ${{ env.KERNEL_URL }} -o kernel.tar.xz
           tar -xJf kernel.tar.xz
           cd linux*
-          make headers_install INSTALL_HDR_PATH=${{ env.KERNEL_HEADER }}
+          make headers_install INSTALL_HDR_PATH=${{ env.KERNEL_HEADERS }}
     
       - name: Download sources
         run: |
