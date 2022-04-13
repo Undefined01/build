@@ -88,11 +88,19 @@ jobs:
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf archive.tar.xz ${{ env.DIST }}
+          tar -cJvf /tmp/archive.tar.xz glibc
+          tar -cJvf /tmp/glibc_include.tar.xz -C glibc/ usr/include
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
-          path: /opt/archive.tar.xz
+          path: /tmp/archive.tar.xz
+          retention-days: 3
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}-include
+          path: /tmp/glibc_include.tar.xz
           retention-days: 3
