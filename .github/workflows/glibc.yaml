@@ -36,6 +36,10 @@ jobs:
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
     steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+        
       - name: Download kernel sources
         run: |
           curl -sSL ${{ env.kernel }} -o kernel.tar.xz
@@ -68,7 +72,7 @@ jobs:
       - name: Build
         working-directory: ${{ env.BUILD }}
         run: |
-          make -j 8
+          make -j ${{ steps.cpu-cores.outputs.count }}
       
       - name: Install
         working-directory: ${{ env.BUILD }}
