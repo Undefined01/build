@@ -1,0 +1,83 @@
+name: binutils
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version of binutils
+        required: true
+        default: "2.38"
+      dist:
+        description: The path to install
+        required: true
+        default: binutils
+
+jobs:
+  binutils:
+    strategy:
+      matrix:
+        include:
+          - name: linux_amd64
+            os: ubuntu-latest
+
+    name: "${{ github.job }} ${{ matrix.name }}"
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+      SRC: ${{ github.workspace }}/src
+      BUILD: ${{ github.workspace }}/build
+      DIST: /opt/${{ github.event.inputs.dist }}
+      CONFIGURE: >-
+        --prefix=/usr
+        --disable-nls
+        --enable-shared
+        --disable-werror
+        --enable-64-bit-bfd
+      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
+
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+        
+      - name: Download sources
+        run: |
+          curl -sSL https://ftp.gnu.org/gnu/binutils/binutils-${{ env.VERSION }}.tar.xz -o binutils.tar.xz
+          tar -xJf binutils.tar.xz
+          ls
+          mv binutils-${{ env.VERSION }} ${{ env.SRC }}
+          ls
+          
+      - name: Create build directory
+        run: |
+          mkdir -p ${{ env.BUILD }}
+          mkdir -p ${{ env.DIST }}
+
+      - name: Configure
+        working-directory: ${{ env.BUILD }}
+        run: |
+          ${{ env.SRC }}/configure ${{ env.CONFIGURE }}
+
+      - name: Build
+        working-directory: ${{ env.BUILD }}
+        run: |
+          make -j ${{ steps.cpu-cores.outputs.count }}
+      
+      - name: Install
+        working-directory: ${{ env.BUILD }}
+        run: |
+          make DESTDIR=${{ env.DIST }} install
+      
+      - name: Archive
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/archive.tar.xz ${{ github.event.inputs.dist }}
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          path: /tmp/archive.tar.xz
+          retention-days: 3
