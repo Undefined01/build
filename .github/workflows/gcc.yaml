@@ -7,10 +7,10 @@ on:
         description: The version of gcc
         required: true
         default: "11.2.0"
-      install_path:
-        description: The path to install gcc
+      dist:
+        description: The path to install
         required: true
-        default: /opt/gcc-11
+        default: gcc-11
 
 jobs:
   gcc:
@@ -28,8 +28,9 @@ jobs:
       VERSION: ${{ github.event.inputs.version }}
       SRC: ${{ github.workspace }}/src
       BUILD: ${{ github.workspace }}/build
+      DIST: ${{ github.event.inputs.dist }}
       CONFIGURE: >-
-        --prefix=${{ github.event.inputs.install_path }}
+        --prefix=/opt/${{ github.event.inputs.dist }}
         --enable-bootstrap
         --enable-languages=c,c++
         --enable-threads=posix
@@ -76,7 +77,7 @@ jobs:
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf /tmp/archive.tar.xz ${{ github.event.inputs.install_path }}
+          tar -cJvf /tmp/archive.tar.xz ${{ env.DIST }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
