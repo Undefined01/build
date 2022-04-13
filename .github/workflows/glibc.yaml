@@ -7,6 +7,10 @@ on:
         description: The version of glibc
         required: true
         default: "2.35"
+      kernel:
+        description: The source tarball of linux kernel
+        required: true
+        default: "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.17.2.tar.xz"
 
 jobs:
   gcc:
@@ -27,11 +31,23 @@ jobs:
       CONFIGURE: >-
         --prefix=/usr
         --enable-kernel=4.15
-        --with-headers=/opt/glibc/usr/include
+        --with-headers=/opt/kernel/usr
         libc_cv_slibdir=/opt/glibc/usr/lib
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
     steps:
+      - name: Download kernel sources
+        run: |
+          curl -sSL ${{ env.kernel }} -o kernel.tar.xz
+          tar -xJf kernel.tar.xz
+          ls
+          cd kernel*
+          make headers
+          find usr/include -name '.*' -delete
+          rm usr/include/Makefile
+          cp -rv usr/include /opt/kernel/usr
+          ls /opt/kernel/usr
+    
       - name: Download sources
         run: |
           curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ env.VERSION }}.tar.xz -o glibc.tar.xz
