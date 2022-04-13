@@ -18,7 +18,7 @@ on:
       dist:
         description: The path to install
         required: true
-        default: /opt/kernel
+        default: /opt/glibc
 
 jobs:
   gcc:
