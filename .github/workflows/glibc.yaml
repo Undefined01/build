@@ -42,7 +42,7 @@ jobs:
         
       - name: Download kernel sources
         run: |
-          curl -sSL ${{ env.kernel }} -o kernel.tar.xz
+          curl -sSL ${{ github.event.inputs.kernel }} -o kernel.tar.xz
           tar -xJf kernel.tar.xz
           ls
           cd kernel*
