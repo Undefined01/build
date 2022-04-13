@@ -40,6 +40,7 @@ jobs:
       BUILD: ${{ github.workspace }}/build
       DIST: ${{ github.event.inputs.dist }}
       CONFIGURE: >-
+        --prefix=/usr
         --with-headers=${{ github.event.inputs.kernel_headers }}/include
         --enable-kernel=4.15
         --without-selinux
