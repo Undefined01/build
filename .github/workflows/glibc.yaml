@@ -94,3 +94,4 @@ jobs:
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
           path: /opt/archive.tar.xz
+          retention-days: 3
