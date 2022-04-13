@@ -11,6 +11,14 @@ on:
         description: The source tarball of linux kernel
         required: true
         default: "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.17.2.tar.xz"
+      kernel_headers:
+        description: The path to install linux kernel headers
+        required: true
+        default: /opt/kernel
+      dist:
+        description: The path to install
+        required: true
+        default: /opt/kernel
 
 jobs:
   gcc:
@@ -27,16 +35,14 @@ jobs:
     env:
       VERSION: ${{ github.event.inputs.version }}
       KERNEL_URL: ${{ github.event.inputs.kernel_url }}
-      KERNEL_HEADER: /opt/kernel/
       SRC: ${{ github.workspace }}/src
       BUILD: ${{ github.workspace }}/build
-      DIST: /opt/glibc
+      DIST: ${{ github.event.inputs.dist }}
       CONFIGURE: >-
-        --prefix=/usr
+        --with-headers=${{ github.event.inputs.kernel_headers }}/include
         --enable-kernel=4.15
         --without-selinux
-        --with-headers=${{ env.KERNEL_HEADER }}/include
-        libc_cv_slibdir=/opt/glibc/usr/lib
+        libc_cv_slibdir=${{ github.event.inputs.dist }}/usr/lib
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
     steps:
