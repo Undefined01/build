@@ -20,7 +20,7 @@ jobs:
           - name: linux_amd64
             os: ubuntu-latest
 
-    name: "gcc ${{ matrix.name }}"
+    name: "${{ github.job }} ${{ matrix.name }}"
     runs-on: ${{ matrix.os }}
     continue-on-error: true
 
