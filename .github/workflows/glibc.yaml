@@ -68,7 +68,7 @@ jobs:
       - name: Build
         working-directory: ${{ env.BUILD }}
         run: |
-          make -j 16
+          make -j 8
       
       - name: Install
         working-directory: ${{ env.BUILD }}
