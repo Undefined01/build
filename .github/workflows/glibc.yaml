@@ -31,7 +31,7 @@ jobs:
       CONFIGURE: >-
         --prefix=/usr
         --enable-kernel=4.15
-        --with-headers=/opt/kernel/usr
+        --with-headers=/opt/kernel/usr/include
         libc_cv_slibdir=/opt/glibc/usr/lib
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
@@ -49,8 +49,9 @@ jobs:
           make headers
           find usr/include -name '.*' -delete
           rm usr/include/Makefile
+          mkdir -p /opt/kernel/usr
           cp -rv usr/include /opt/kernel/usr
-          ls /opt/kernel/usr
+          ls /opt/kernel/usr/include
     
       - name: Download sources
         run: |
