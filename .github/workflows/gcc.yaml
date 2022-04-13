@@ -6,7 +6,7 @@ on:
       version:
         description: The version of GCC
         required: true
-        default: releases/gcc-11.2.0
+        default: gcc-11.2.0
       install_path:
         description: The version of GCC
         required: true
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           repository: gcc-mirror/gcc
-          ref: ${{ env.VERSION }}
+          ref: releases/${{ env.VERSION }}
           path: ${{ env.SRC }}
           
       - name: Create build directory
