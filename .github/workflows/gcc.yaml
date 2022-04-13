@@ -39,6 +39,10 @@ jobs:
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
     steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+        
       - uses: actions/checkout@v2
         with:
           repository: gcc-mirror/gcc
@@ -62,7 +66,7 @@ jobs:
       - name: Build
         working-directory: ${{ env.BUILD }}
         run: |
-          make -j 16
+          make -j ${{ steps.cpu-cores.outputs.count }}
       
       - name: Install
         working-directory: ${{ env.BUILD }}
