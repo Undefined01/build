@@ -45,7 +45,7 @@ jobs:
           curl -sSL ${{ github.event.inputs.kernel }} -o kernel.tar.xz
           tar -xJf kernel.tar.xz
           ls
-          cd kernel*
+          cd linux*
           make headers
           find usr/include -name '.*' -delete
           rm usr/include/Makefile
