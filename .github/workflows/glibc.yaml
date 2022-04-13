@@ -6,7 +6,7 @@ on:
       version:
         description: The version of glibc
         required: true
-        default: 2.35
+        default: "2.35"
 
 jobs:
   gcc:
@@ -16,13 +16,13 @@ jobs:
           - name: linux_amd64
             os: ubuntu-latest
 
-    name: "GCC ${{ matrix.name }}"
+    name: "glibc ${{ matrix.name }}"
     runs-on: ${{ matrix.os }}
     continue-on-error: true
 
     env:
       VERSION: ${{ github.event.inputs.version }}
-      SRC: ${{ github.workspace }}/glibc
+      SRC: ${{ github.workspace }}/src
       BUILD: ${{ github.workspace }}/build
       CONFIGURE: >-
         --prefix=/usr
@@ -36,6 +36,7 @@ jobs:
         run: |
           curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ env.VERSION }}.tar.xz -o glibc.tar.xz
           tar -xJf glibc.tar.xz
+          mv glibc-${{ env.VERSION }} ${{ env.SRC }}
           ls
           
       - name: Create build directory
@@ -61,10 +62,10 @@ jobs:
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf glibc.tar.xz /opt/glibc
+          tar -cJvf archive.tar.xz /opt/glibc
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
-          path: /opt/glibc.tar.xz
+          path: /opt/archive.tar.xz
