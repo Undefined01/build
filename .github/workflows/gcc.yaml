@@ -6,7 +6,7 @@ on:
       version:
         description: The version of gcc
         required: true
-        default: 11.2.0
+        default: "11.2.0"
       install_path:
         description: The path to install gcc
         required: true
@@ -20,7 +20,7 @@ jobs:
           - name: linux_amd64
             os: ubuntu-latest
 
-    name: "GCC ${{ matrix.name }}"
+    name: "gcc ${{ matrix.name }}"
     runs-on: ${{ matrix.os }}
     continue-on-error: true
 
