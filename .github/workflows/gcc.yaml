@@ -72,4 +72,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
-          path: ${{ github.event.inputs.version }}
+          path: ${{ github.event.inputs.install_path }}
