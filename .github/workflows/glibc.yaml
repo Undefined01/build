@@ -21,14 +21,14 @@ on:
         default: /opt/glibc
 
 jobs:
-  gcc:
+  glibc:
     strategy:
       matrix:
         include:
           - name: linux_amd64
             os: ubuntu-latest
 
-    name: "glibc ${{ matrix.name }}"
+    name: "${{ github.job }} ${{ matrix.name }}"
     runs-on: ${{ matrix.os }}
     continue-on-error: true
 
@@ -90,7 +90,7 @@ jobs:
           tar -cJvf archive.tar.xz ${{ env.DIST }}
          
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
           path: /opt/archive.tar.xz
