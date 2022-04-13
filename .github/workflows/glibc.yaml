@@ -7,7 +7,7 @@ on:
         description: The version of glibc
         required: true
         default: "2.35"
-      kernel:
+      kernel_url:
         description: The source tarball of linux kernel
         required: true
         default: "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.17.2.tar.xz"
@@ -26,13 +26,16 @@ jobs:
 
     env:
       VERSION: ${{ github.event.inputs.version }}
+      KERNEL_URL: ${{ github.event.inputs.kernel_url }}
+      KERNEL_HEADER: /opt/kernel/
       SRC: ${{ github.workspace }}/src
       BUILD: ${{ github.workspace }}/build
+      DIST: /opt/glibc
       CONFIGURE: >-
         --prefix=/usr
         --enable-kernel=4.15
         --without-selinux
-        --with-headers=/opt/kernel/usr/include
+        --with-headers=${{ env.KERNEL_HEADER }}/include
         libc_cv_slibdir=/opt/glibc/usr/lib
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
@@ -43,16 +46,10 @@ jobs:
         
       - name: Prepare kernel header
         run: |
-          curl -sSL ${{ github.event.inputs.kernel }} -o kernel.tar.xz
+          curl -sSL ${{ env.KERNEL_URL }} -o kernel.tar.xz
           tar -xJf kernel.tar.xz
-          ls
           cd linux*
-          make headers
-          find usr/include -name '.*' -delete
-          rm usr/include/Makefile
-          mkdir -p /opt/kernel/usr
-          cp -rv usr/include /opt/kernel/usr
-          ls /opt/kernel/usr/include
+          make headers_install INSTALL_HDR_PATH=${{ env.KERNEL_HEADER }}
     
       - name: Download sources
         run: |
@@ -64,7 +61,7 @@ jobs:
       - name: Create build directory
         run: |
           mkdir -p ${{ env.BUILD }}
-          mkdir -p /opt/glib/usr
+          mkdir -p /opt/glib
 
       - name: Configure
         working-directory: ${{ env.BUILD }}
@@ -79,12 +76,12 @@ jobs:
       - name: Install
         working-directory: ${{ env.BUILD }}
         run: |
-          make DESTDIR=/opt/glibc install
+          make DESTDIR=${{ env.DIST }} install
       
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf archive.tar.xz /opt/glibc
+          tar -cJvf archive.tar.xz ${{ env.DIST }}
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
