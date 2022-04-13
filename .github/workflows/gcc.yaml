@@ -67,9 +67,14 @@ jobs:
         working-directory: ${{ env.BUILD }}
         run: |
           make install
+      
+      - name: Archive
+        working-directory: /opt
+        run: |
+          tar -cJvf /opt/gcc.tar.xz ${{ github.event.inputs.install_path }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
-          path: ${{ github.event.inputs.install_path }}
+          path: /opt/gcc.tar.xz
