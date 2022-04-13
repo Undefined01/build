@@ -1,14 +1,14 @@
-name: GCC
+name: gcc
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: The version of GCC
+        description: The version of gcc
         required: true
-        default: gcc-11.2.0
+        default: 11.2.0
       install_path:
-        description: The version of GCC
+        description: The path to install gcc
         required: true
         default: /opt/gcc-11
 
@@ -26,7 +26,7 @@ jobs:
 
     env:
       VERSION: ${{ github.event.inputs.version }}
-      SRC: ${{ github.workspace }}/gcc
+      SRC: ${{ github.workspace }}/src
       BUILD: ${{ github.workspace }}/build
       CONFIGURE: >-
         --prefix=${{ github.event.inputs.install_path }}
@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           repository: gcc-mirror/gcc
-          ref: releases/${{ env.VERSION }}
+          ref: releases/gcc-${{ env.VERSION }}
           path: ${{ env.SRC }}
           
       - name: Create build directory
@@ -72,10 +72,10 @@ jobs:
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf /opt/gcc.tar.xz ${{ github.event.inputs.install_path }}
+          tar -cJvf /tmp/archive.tar.xz ${{ github.event.inputs.install_path }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
-          path: /opt/gcc.tar.xz
+          path: /tmp/archive.tar.xz
