@@ -31,6 +31,7 @@ jobs:
       CONFIGURE: >-
         --prefix=/usr
         --enable-kernel=4.15
+        --without-selinux
         --with-headers=/opt/kernel/usr/include
         libc_cv_slibdir=/opt/glibc/usr/lib
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
@@ -40,7 +41,7 @@ jobs:
         uses: SimenB/github-actions-cpu-cores@v1
         id: cpu-cores
         
-      - name: Download kernel sources
+      - name: Prepare kernel header
         run: |
           curl -sSL ${{ github.event.inputs.kernel }} -o kernel.tar.xz
           tar -xJf kernel.tar.xz
