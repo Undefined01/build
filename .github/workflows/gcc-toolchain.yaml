@@ -69,7 +69,7 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ${{ github.workspace }}
+          path: .
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -101,7 +101,7 @@ jobs:
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz ${{ env.SYSROOT }}
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -135,7 +135,7 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ${{ github.workspace }}
+          path: .
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -154,7 +154,7 @@ jobs:
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz ${{ env.SYSROOT }}
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -232,7 +232,7 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ${{ github.workspace }}
+          path: .
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -242,7 +242,9 @@ jobs:
           tar -xJf gcc.tar.xz
           rm gcc.tar.xz
           mv gcc* src
-          src/contrib/download_prerequisites
+          pushd src
+          contrib/download_prerequisites
+          popd
           mkdir build
 
       - name: Configure
@@ -265,7 +267,7 @@ jobs:
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz ${{ env.SYSROOT }}
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -283,7 +285,7 @@ jobs:
 
     name: "${{ github.job }} ${{ matrix.name }}"
     runs-on: ${{ matrix.os }}
-    needs: gcc1
+    needs: [kernel_headers, gcc1]
     continue-on-error: true
 
     env:
@@ -330,12 +332,13 @@ jobs:
           ls
           tar -xJf kernel_headers.tar.xz
           tar -xJf gcc1.tar.xz
+          rm *.tar.xz
           tree
 
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ${{ github.workspace }}
+          path: .
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -367,7 +370,7 @@ jobs:
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz ${{ env.SYSROOT }}
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
