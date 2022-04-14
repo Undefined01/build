@@ -102,6 +102,13 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}-include
+          name: ${{ github.job }}-include-${{ env.VERSION }}-${{ matrix.name }}
           path: /tmp/glibc_include.tar.xz
+          retention-days: 3
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}-kernel-headers-${{ env.VERSION }}-${{ matrix.name }}
+          path: ${{ env.KERNEL_HEADERS }}
           retention-days: 3
