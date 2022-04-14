@@ -43,7 +43,6 @@ jobs:
         --prefix=/usr
         --with-headers=/opt/${{ github.event.inputs.kernel_headers }}/include
         --enable-kernel=4.15
-        --without-selinux
         libc_cv_slibdir=${{ github.event.inputs.dist }}/usr/lib
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
