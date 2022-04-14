@@ -260,9 +260,6 @@ jobs:
         working-directory: build
         run: |
           echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
-          echo $PATH
-          which as
-          which ${{ env.TARGET }}-as
           ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
 
       - name: Build
