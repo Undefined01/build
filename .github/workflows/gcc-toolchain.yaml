@@ -163,7 +163,6 @@ jobs:
         working-directory: /opt
         run: |
           tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
-          tree ${{ github.workspace }}/src
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -192,9 +191,6 @@ jobs:
       CONFIGURE: >-
         --prefix=${{ github.event.inputs.sysroot }}/tools
         --with-glibc-version=${{ github.event.inputs.glibc_version }}
-        --with-sysroot=${{ github.event.inputs.sysroot }}
-        --build=${{ github.event.inputs.build }}
-        --host=${{ github.event.inputs.build }}
         --target=${{ github.event.inputs.target }}
         --with-newlib
         --without-headers
@@ -238,7 +234,6 @@ jobs:
           ls
           tar -xJf binutils.tar.xz
           rm *.tar.xz
-          tree
 
       - uses: actions/cache@v3
         id: cache
@@ -264,6 +259,10 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
+          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
+          echo $PATH
+          which as
+          which ${{ env.TARGET }}-as
           ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
 
       - name: Build
@@ -347,8 +346,6 @@ jobs:
           tar -xJf kernel_headers.tar.xz
           tar -xJf gcc1.tar.xz
           rm *.tar.xz
-          tree
-          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
 
       - uses: actions/cache@v3
         id: cache
@@ -370,6 +367,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
+          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
           ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
 
       - name: Build
@@ -445,7 +443,6 @@ jobs:
         run: |
           tar -xJf glibc.tar.xz
           rm *.tar.xz
-          tree
           echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
 
       - uses: actions/cache@v3
