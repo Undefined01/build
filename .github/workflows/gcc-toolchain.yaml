@@ -60,8 +60,11 @@ jobs:
       CONFIGURE: >-
         --prefix=${{ github.event.inputs.sysroot }}/tools
         --with-sysroot=${{ github.event.inputs.sysroot }}
+        --build=${{ github.event.inputs.build }}
+        --host=${{ github.event.inputs.build }}
         --target=${{ github.event.inputs.target }}
         --disable-nls
+        --disable-multilib
         --disable-werror
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
@@ -190,8 +193,11 @@ jobs:
       VERSION: ${{ github.event.inputs.gcc_version }}
       CONFIGURE: >-
         --prefix=${{ github.event.inputs.sysroot }}/tools
-        --with-glibc-version=${{ github.event.inputs.glibc_version }}
+        --build=${{ github.event.inputs.build }}
+        --host=${{ github.event.inputs.build }}
         --target=${{ github.event.inputs.target }}
+        --with-sysroot=${{ github.event.inputs.sysroot }}
+        --with-glibc-version=${{ github.event.inputs.glibc_version }}
         --with-newlib
         --without-headers
         --enable-initfini-array
@@ -231,7 +237,6 @@ jobs:
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         working-directory: ${{ env.SYSROOT }}
         run: |
-          ls
           tar -xJf binutils.tar.xz
           rm *.tar.xz
 
@@ -255,11 +260,14 @@ jobs:
           popd
           mkdir build
 
+      - name: Update enviornment variables
+        run: |
+          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
+
       - name: Configure
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
           ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
 
       - name: Build
@@ -285,7 +293,7 @@ jobs:
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
           
-  glibc:
+  glibc1:
     strategy:
       matrix:
         include:
@@ -305,7 +313,8 @@ jobs:
       CONFIGURE: >-
         --prefix=/usr
         --host=${{ github.event.inputs.target }}
-        --build=${{ github.event.inputs.target }}
+        --target=${{ github.event.inputs.target }}
+        --build=${{ github.event.inputs.build }}
         --with-headers=${{ github.event.inputs.sysroot }}/usr/include
         --enable-kernel=3.2
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
@@ -339,7 +348,6 @@ jobs:
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         working-directory: ${{ env.SYSROOT }}
         run: |
-          ls
           tar -xJf kernel_headers.tar.xz
           tar -xJf gcc1.tar.xz
           rm *.tar.xz
@@ -360,11 +368,14 @@ jobs:
           mv glibc* src
           mkdir build
 
+      - name: Update enviornment variables
+        run: |
+          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
+
       - name: Configure
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
           ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
 
       - name: Build
@@ -440,7 +451,6 @@ jobs:
         run: |
           tar -xJf glibc.tar.xz
           rm *.tar.xz
-          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
 
       - uses: actions/cache@v3
         id: cache
@@ -457,6 +467,10 @@ jobs:
           tar -xJf glibc.tar.xz
           mv glibc* src
           mkdir build
+
+      - name: Update enviornment variables
+        run: |
+          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
 
       - name: Configure
         working-directory: src
