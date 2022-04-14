@@ -11,6 +11,10 @@ on:
         description: The build platform
         required: true
         default: x86_64-pc-linux-gnu
+      target_freestanding:
+        description: The target platform
+        required: true
+        default: x86_64-unknown-elf-gnu
       target:
         description: The target platform
         required: true
@@ -195,7 +199,7 @@ jobs:
         --prefix=${{ github.event.inputs.sysroot }}/tools
         --build=${{ github.event.inputs.build }}
         --host=${{ github.event.inputs.build }}
-        --target=${{ github.event.inputs.target }}
+        --target=${{ github.event.inputs.target_freestanding }}
         --with-sysroot=${{ github.event.inputs.sysroot }}
         --with-glibc-version=${{ github.event.inputs.glibc_version }}
         --with-newlib
@@ -312,7 +316,7 @@ jobs:
       VERSION: ${{ github.event.inputs.glibc_version }}
       CONFIGURE: >-
         --prefix=/usr
-        --host=${{ github.event.inputs.target }}
+        --host=${{ github.event.inputs.target_freestanding }}
         --target=${{ github.event.inputs.target }}
         --build=${{ github.event.inputs.build }}
         --with-headers=${{ github.event.inputs.sysroot }}/usr/include
