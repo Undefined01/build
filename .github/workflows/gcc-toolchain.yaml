@@ -69,7 +69,9 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ./
+          path: |
+            ~/src
+            ~/build
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -135,7 +137,9 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ./
+          path: |
+            ~/src
+            ~/build
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -232,7 +236,9 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ./
+          path: |
+            ~/src
+            ~/build
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -338,7 +344,9 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ./
+          path: |
+            ~/src
+            ~/build
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -433,7 +441,7 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ./
+          path: |~/src
           key: gcc1-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
