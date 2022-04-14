@@ -7,10 +7,14 @@ on:
         description: The architecture of platform
         required: true
         default: x86_64
+      build:
+        description: The build platform
+        required: true
+        default: x86_64-pc-linux-gnu
       target:
         description: The target platform
         required: true
-        default: x86_64-pc-linux-gnu
+        default: x86_64-unknown-linux-gnu
       kernel_url:
         description: The source tarball of linux kernel
         required: true
@@ -185,6 +189,8 @@ jobs:
         --prefix=${{ github.event.inputs.sysroot }}/tools
         --with-glibc-version=${{ github.event.inputs.glibc_version }}
         --with-sysroot=${{ github.event.inputs.sysroot }}
+        --build=${{ github.event.inputs.build }}
+        --host=${{ github.event.inputs.build }}
         --target=${{ github.event.inputs.target }}
         --with-newlib
         --without-headers
@@ -299,6 +305,7 @@ jobs:
       CONFIGURE: >-
         --prefix=/usr
         --host=${{ github.event.inputs.target }}
+        --build=${{ github.event.inputs.target }}
         --with-headers=${{ github.event.inputs.sysroot }}/usr/include
         --enable-kernel=3.2
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
@@ -337,6 +344,7 @@ jobs:
           tar -xJf gcc1.tar.xz
           rm *.tar.xz
           tree
+          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
 
       - uses: actions/cache@v3
         id: cache
@@ -434,6 +442,7 @@ jobs:
           tar -xJf glibc.tar.xz
           rm *.tar.xz
           tree
+          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
 
       - uses: actions/cache@v3
         id: cache
