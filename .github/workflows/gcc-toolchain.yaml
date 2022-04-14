@@ -14,7 +14,7 @@ on:
       target_freestanding:
         description: The target platform
         required: true
-        default: x86_64-unknown-elf-gnu
+        default: x86_64-elf
       target:
         description: The target platform
         required: true
