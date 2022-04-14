@@ -69,7 +69,7 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: .
+          path: ./
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -135,7 +135,7 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: .
+          path: ./
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -232,7 +232,7 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: .
+          path: ./
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -338,7 +338,7 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: .
+          path: ./
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -364,6 +364,100 @@ jobs:
       
       - name: Install
         working-directory: build
+        run: |
+          make DESTDIR=${{ env.SYSROOT }} install
+      
+      - name: Archive
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          path: /tmp/${{ github.job }}.tar.xz
+          retention-days: 3
+
+  libstdcpp:
+    strategy:
+      matrix:
+        include:
+          - name: linux_amd64
+            os: ubuntu-latest
+
+    name: "${{ github.job }} ${{ matrix.name }}"
+    runs-on: ${{ matrix.os }}
+    needs: [glibc]
+    continue-on-error: true
+
+    env:
+      ARCH: ${{ github.event.inputs.arch }}
+      TARGET: ${{ github.event.inputs.target }}
+      SYSROOT: ${{ github.event.inputs.sysroot }}
+      CONFIGURE: >-
+        --prefix=/usr
+        --host=${{ github.event.inputs.target }}
+        --disable-multilib
+        --disable-nsl
+        --disable-libstdcxx-pch
+        --with-gxx-include-dir=/tools/$LFS_TGT/include/c++/11.2.0
+      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
+
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+
+      - uses: actions/cache@v3
+        id: cache_sysroot
+        with:
+          path: ${{ github.event.inputs.sysroot }}
+          key: glibc-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+      
+      - name: Download glibc
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: glibc-${{ matrix.name }}
+          path: ${{ env.SYSROOT }}
+      
+      - name: Extract
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        working-directory: ${{ env.SYSROOT }}
+        run: |
+          tar -xJf glibc.tar.xz
+          rm *.tar.xz
+          tree
+
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: ./
+          key: gcc1-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+        
+      - name: Download sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ env.VERSION }}.tar.xz -o glibc.tar.xz
+          tar -xJf glibc.tar.xz
+          mv glibc* src
+          mkdir build
+
+      - name: Configure
+        working-directory: src
+        run: |
+          mkdir build
+          cd build
+          ../libstdc++-v3/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
+
+      - name: Build
+        working-directory: src/build
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }}
+      
+      - name: Install
+        working-directory: src/build
         run: |
           make DESTDIR=${{ env.SYSROOT }} install
       
