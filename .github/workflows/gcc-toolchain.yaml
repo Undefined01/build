@@ -69,7 +69,7 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ~/
+          path: ${{ github.workspace }}/src
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -102,7 +102,6 @@ jobs:
         working-directory: /opt
         run: |
           tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
-          tree ~/
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -136,7 +135,7 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ~/
+          path: ${{ github.workspace }}/src
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
@@ -156,7 +155,7 @@ jobs:
         working-directory: /opt
         run: |
           tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
-          tree ~/
+          tree ${{ github.workspace }}/src
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
