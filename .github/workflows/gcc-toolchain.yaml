@@ -441,7 +441,9 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: |~/src
+          path: |
+            ~/src
+            ~/build
           key: gcc1-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
