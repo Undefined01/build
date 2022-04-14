@@ -70,7 +70,7 @@ jobs:
         id: cache
         with:
           path: ${{ github.workspace }}
-          key: binutils-${{ runner.os }}-${{ env.VERSION }}-${{ github.event.inputs.cache_id }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
         if: steps.cache.outputs.cache-hit != 'true'
@@ -136,12 +136,12 @@ jobs:
         id: cache
         with:
           path: ${{ github.workspace }}
-          key: kernel_headers-${{ runner.os }}-${{ env.VERSION }}-${{ github.event.inputs.cache_id }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          curl -sSL ${{ env.KERNEL_URL }} -o kernel.tar.xz
+          curl -sSL ${{ env.VERSION }} -o kernel.tar.xz
           tar -xJf kernel.tar.xz
           rm kernel.tar.xz
           mv linux* src
@@ -211,7 +211,7 @@ jobs:
         id: cache_sysroot
         with:
           path: ${{ github.event.inputs.sysroot }}
-          key: gcc1-${{ runner.os }}-${{ env.VERSION }}-${{ github.event.inputs.cache_id }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
       
       - name: Download binutils
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
@@ -241,7 +241,7 @@ jobs:
         id: cache
         with:
           path: ${{ github.workspace }}
-          key: gcc1-${{ runner.os }}-${{ env.VERSION }}-${{ github.event.inputs.cache_id }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download sources
         if: steps.cache.outputs.cache-hit != 'true'
