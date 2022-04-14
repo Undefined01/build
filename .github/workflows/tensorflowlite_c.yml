@@ -6,7 +6,7 @@ on:
       version:
         description: The version of tensorflow
         required: true
-        default: v2.6.0
+        default: v3.6.0
 
 jobs:
   tensorflowlite_c:
@@ -39,7 +39,7 @@ jobs:
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           repository: tensorflow/tensorflow
           ref: ${{ env.VERSION }}
@@ -57,7 +57,7 @@ jobs:
           cmake --build . --target install --config Release
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
           path: |

@@ -1,0 +1,282 @@
+name: gcc toolchain
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: The architecture of platform
+        required: true
+        default: x86_64
+      target:
+        description: The target platform
+        required: true
+        default: x86_64-pc-linux-gnu
+      kernel_url:
+        description: The source tarball of linux kernel
+        required: true
+        default: "https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.17.2.tar.xz"
+      binutils_version:
+        description: The version of binutils
+        required: true
+        default: "2.38"
+      gcc_version:
+        description: The version of gcc
+        required: true
+        default: "11.2.0"
+      glibc_version:
+        description: The version of glibc
+        required: true
+        default: "2.35"
+      sysroot:
+        description: The root for gcc toolchain
+        required: true
+        default: /opt/gcc
+      cache_id:
+        description: The build id for caches
+        required: true
+        default: "1"
+
+jobs:
+  binutils:
+    strategy:
+      matrix:
+        include:
+          - name: linux_amd64
+            os: ubuntu-latest
+
+    name: "${{ github.job }} ${{ matrix.name }}"
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    env:
+      ARCH: ${{ github.event.inputs.arch }}
+      TARGET: ${{ github.event.inputs.target }}
+      SYSROOT: ${{ github.event.inputs.sysroot }}
+      VERSION: ${{ github.event.inputs.binutils_version }}
+      CONFIGURE: >-
+        --prefix=${{ github.event.inputs.sysroot }}/tools
+        --with-sysroot=${{ github.event.inputs.sysroot }}
+        --target=${{ github.event.inputs.target }}
+        --disable-nls
+        --disable-werror
+      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
+
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: ${{ github.workspace }}
+          key: binutils-${{ runner.os }}-${{ env.VERSION }}-${{ github.event.inputs.cache_id }}
+        
+      - name: Download sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL https://ftp.gnu.org/gnu/binutils/binutils-${{ env.VERSION }}.tar.xz -o binutils.tar.xz
+          tar -xJf binutils.tar.xz
+          rm binutils.tar.xz
+          mv binutils* src
+          mkdir build
+
+      - name: Configure
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
+
+      - name: Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }}
+      
+      - name: Install
+        working-directory: build
+        run: |
+          make install
+      
+      - name: Archive
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/${{ github.job }}.tar.xz ${{ github.event.inputs.sysroot }}
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}-${{ matrix.name }}
+          path: /tmp/${{ github.job }}.tar.xz
+          retention-days: 3
+
+  kernel_headers:
+    strategy:
+      matrix:
+        include:
+          - name: linux_amd64
+            os: ubuntu-latest
+
+    name: "${{ github.job }} ${{ matrix.name }}"
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    env:
+      ARCH: ${{ github.event.inputs.arch }}
+      TARGET: ${{ github.event.inputs.target }}
+      SYSROOT: ${{ github.event.inputs.sysroot }}
+      VERSION: ${{ github.event.inputs.kernel_url }}
+
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: ${{ github.workspace }}
+          key: kernel_headers-${{ runner.os }}-${{ env.VERSION }}-${{ github.event.inputs.cache_id }}
+        
+      - name: Download sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL ${{ env.KERNEL_URL }} -o kernel.tar.xz
+          tar -xJf kernel.tar.xz
+          rm kernel.tar.xz
+          mv linux* src
+          
+      - name: Install
+        working-directory: src
+        run: |
+          make ARCH=${{ env.ARCH }} INSTALL_HDR_PATH=${{ env.SYSROOT }}/usr headers_install
+      
+      - name: Archive
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/${{ github.job }}.tar.xz ${{ github.event.inputs.sysroot }}
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}-${{ matrix.name }}
+          path: /tmp/${{ github.job }}.tar.xz
+          retention-days: 3
+          
+  gcc1:
+    strategy:
+      matrix:
+        include:
+          - name: linux_amd64
+            os: ubuntu-latest
+
+    name: "${{ github.job }} ${{ matrix.name }}"
+    runs-on: ${{ matrix.os }}
+    needs: [binutils, kernel_headers]
+    continue-on-error: true
+
+    env:
+      ARCH: ${{ github.event.inputs.arch }}
+      TARGET: ${{ github.event.inputs.target }}
+      SYSROOT: ${{ github.event.inputs.sysroot }}
+      VERSION: ${{ github.event.inputs.gcc_version }}
+      CONFIGURE: >-
+        --prefix=${{ github.event.inputs.sysroot }}/tools
+        --with-glibc-version=${{ github.event.inputs.glibc_version }}
+        --with-sysroot=${{ github.event.inputs.sysroot }}
+        --target=${{ github.event.inputs.target }}
+        --with-newlib
+        --without-headers
+        --enable-initfini-array
+        --disable-nls
+        --disable-werror
+        --disable-multilib
+        --disable-decimal-float
+        --disable-threads
+        --disable-libatomic
+        --disable-libgomp
+        --disable-libquadmath
+        --disable-libssp
+        --disable-libvtv
+        --disable-libstdcxx
+        --enable-languages=c,c++
+      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
+
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+
+      - uses: actions/cache@v3
+        id: cache_sysroot
+        with:
+          path: ${{ github.event.inputs.sysroot }}
+          key: gcc1-${{ runner.os }}-${{ env.VERSION }}-${{ github.event.inputs.cache_id }}
+      
+      - name: Download binutils
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: binutils-${{ matrix.name }}
+          path: ${{ env.SYSROOT }}
+
+      - name: Download kernel_headers
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: kernel_headers-${{ matrix.name }}
+          path: ${{ env.SYSROOT }}
+      
+      - name: Extract
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        working-directory: ${{ env.SYSROOT }}
+        run: |
+          ls
+          tar -xJf binutils.tar.xz
+          tar -xJf kernel_headers.tar.xz
+          rm *.tar.xz
+          tree
+
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: ${{ github.workspace }}
+          key: gcc1-${{ runner.os }}-${{ env.VERSION }}-${{ github.event.inputs.cache_id }}
+        
+      - name: Download sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL https://ftp.gnu.org/gnu/gcc/gcc-${{ env.VERSION }}/gcc-${{ env.VERSION }}.tar.xz -o gcc.tar.xz
+          tar -xJf gcc.tar.xz
+          rm gcc.tar.xz
+          mv gcc* src
+          mkdir build
+
+      - name: Configure
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
+
+      - name: Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }}
+      
+      - name: Install
+        working-directory: build
+        run: |
+          make install
+      
+      - name: Archive
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/archive.tar.xz ${{ github.event.inputs.sysroot }}
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          path: /tmp/archive.tar.xz
+          retention-days: 3

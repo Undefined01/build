@@ -106,7 +106,7 @@ jobs:
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           repository: opencv/opencv
           ref: ${{ env.VERSION }}
@@ -129,7 +129,7 @@ jobs:
           cmake --build . --target install --config Release
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
           path: ${{ env.BUILD }}/install
@@ -166,14 +166,14 @@ jobs:
       EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           repository: shimat/opencvsharp
           ref: ${{ env.VERSION }}
           path: ${{ env.SRC }}
 
       - name: Download OpenCV build
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: opencv-${{ env.OPENCV_VERSION }}-${{ matrix.name }}
           path: ${{ env.OPENCV }}
@@ -205,7 +205,7 @@ jobs:
           cmake --build . --target install --config Release
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
           path: ${{ env.BUILD }}/install

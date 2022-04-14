@@ -44,7 +44,7 @@ jobs:
         uses: SimenB/github-actions-cpu-cores@v1
         id: cpu-cores
         
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           repository: gcc-mirror/gcc
           ref: releases/gcc-${{ env.VERSION }}
@@ -80,7 +80,7 @@ jobs:
           tar -cJvf /tmp/archive.tar.xz ${{ env.DIST }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
           path: /tmp/archive.tar.xz
