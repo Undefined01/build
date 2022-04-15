@@ -200,7 +200,7 @@ jobs:
         --target=${{ github.event.inputs.target }}
         --with-headers=${{ github.event.inputs.sysroot }}/usr/include
         --disable-multilib
-        --disable-selinux
+        --without-selinux
         --enable-kernel=3.2
 
     steps:
