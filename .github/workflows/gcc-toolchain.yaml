@@ -274,13 +274,13 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build-gcc
         run: |
-          ../src/configure ${{ env.GCC_CONFIGURE }}
+          ../gcc/configure ${{ env.GCC_CONFIGURE }}
 
       - name: Configure glibc
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build-glibc
         run: |
-          ../src/configure ${{ env.GLIBC_CONFIGURE }}
+          ../glibc/configure ${{ env.GLIBC_CONFIGURE }}
 
       - name: Build baremetal gcc
         working-directory: build-gcc
