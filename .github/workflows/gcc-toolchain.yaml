@@ -200,6 +200,7 @@ jobs:
         --target=${{ github.event.inputs.target }}
         --with-headers=${{ github.event.inputs.sysroot }}/usr/include
         --disable-multilib
+        --disable-selinux
         --enable-kernel=3.2
 
     steps:
@@ -243,7 +244,7 @@ jobs:
             ${{ github.workspace }}/build-gcc
             ${{ github.workspace }}/glibc
             ${{ github.workspace }}/build-glibc
-          key: gcc-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download gcc sources
         if: steps.cache.outputs.cache-hit != 'true'
