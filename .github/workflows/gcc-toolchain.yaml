@@ -271,7 +271,6 @@ jobs:
           ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
 
       - name: Build
-        if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }} all-gcc
@@ -381,7 +380,6 @@ jobs:
           ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
 
       - name: Build
-        if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
           make install-bootstrap-headers=yes install-headers
@@ -500,7 +498,6 @@ jobs:
           ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
 
       - name: Build
-        if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }} all-target-libgcc
@@ -602,13 +599,11 @@ jobs:
           ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
 
       - name: Build
-        if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }}
 
       - name: Install
-        if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
           make install
@@ -722,7 +717,6 @@ jobs:
           ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
 
       - name: Build
-        if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }}
