@@ -300,7 +300,7 @@ jobs:
           mkdir -p ${{ env.SYSROOT }}/lib
           install csu/crt1.o csu/crti.o csu/crtn.o ${{ env.SYSROOT }}/lib
           ${{ github.event.inputs.target }}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o ${{ env.SYSROOT }}/lib/libc.so
-          touch ${{ env.SYSROOT }}/include/gnu/stubs.h
+          touch ${{ env.SYSROOT }}/usr/include/gnu/stubs.h
           
       - name: Build libgcc
         working-directory: build-gcc
