@@ -184,14 +184,6 @@ jobs:
         --disable-nls
         --disable-werror
         --disable-multilib
-        --disable-decimal-float
-        --disable-threads
-        --disable-libatomic
-        --disable-libgomp
-        --disable-libquadmath
-        --disable-libssp
-        --disable-libvtv
-        --disable-libstdcxx
         --enable-languages=c,c++
       GLIBC_CONFIGURE: >-
         --prefix=/usr
@@ -201,6 +193,7 @@ jobs:
         --with-headers=${{ github.event.inputs.sysroot }}/usr/include
         --disable-multilib
         --without-selinux
+        --enable-stack-protector=strong
         --enable-kernel=3.2
 
     steps:
