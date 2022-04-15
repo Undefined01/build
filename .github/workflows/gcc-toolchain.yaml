@@ -386,8 +386,9 @@ jobs:
         run: |
           make install-bootstrap-headers=yes install-headers
           make -j${{ steps.cpu-cores.outputs.count }} csu/subdir_lib
-          install csu/crt1.o csu/crti.o csu/crtn.o ${{ env.SYSROOT }}/lib64
-          ${{ github.event.inputs.target }}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o ${{ env.SYSROOT }}/lib64/libc.so
+          mkdir -p ${{ env.SYSROOT }}/lib
+          install csu/crt1.o csu/crti.o csu/crtn.o ${{ env.SYSROOT }}/lib
+          ${{ github.event.inputs.target }}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o ${{ env.SYSROOT }}/lib/libc.so
           touch ${{ env.SYSROOT }}/include/gnu/stubs.h
       
       - name: Archive
