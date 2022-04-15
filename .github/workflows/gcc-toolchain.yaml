@@ -399,7 +399,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          name: ${{ github.job }}-${{ matrix.name }}
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
  
@@ -621,7 +621,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          name: ${{ github.job }}-${{ matrix.name }}
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
  
