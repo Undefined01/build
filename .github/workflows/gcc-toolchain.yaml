@@ -171,7 +171,6 @@ jobs:
       ARCH: ${{ github.event.inputs.arch }}
       TARGET: ${{ github.event.inputs.target }}
       SYSROOT: ${{ github.event.inputs.sysroot }}
-      VERSION: ${{ github.event.inputs.gcc_version }}
       GCC_CONFIGURE: >-
         --prefix=${{ github.event.inputs.sysroot }}/tools
         --build=${{ github.event.inputs.build }}
@@ -249,7 +248,7 @@ jobs:
       - name: Download gcc sources
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          curl -sSL https://ftp.gnu.org/gnu/gcc/gcc-${{ env.VERSION }}/gcc-${{ env.VERSION }}.tar.xz -o gcc.tar.xz
+          curl -sSL https://ftp.gnu.org/gnu/gcc/gcc-${{ github.event.inputs.gcc_version }}/gcc-${{ github.event.inputs.gcc_version }}.tar.xz -o gcc.tar.xz
           tar -xJf gcc.tar.xz
           rm gcc.tar.xz
           mv gcc* gcc
@@ -261,7 +260,7 @@ jobs:
       - name: Download glibc sources
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ env.VERSION }}.tar.xz -o glibc.tar.xz
+          curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ github.event.inputs.glibc_version }}.tar.xz -o glibc.tar.xz
           tar -xJf glibc.tar.xz
           rm glibc.tar.xz
           mv glibc* glibc
