@@ -366,6 +366,7 @@ jobs:
         run: |
           curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ env.VERSION }}.tar.xz -o glibc.tar.xz
           tar -xJf glibc.tar.xz
+          rm glibc.tar.xz
           mv glibc* src
           mkdir build
 
@@ -585,6 +586,7 @@ jobs:
         run: |
           curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ env.VERSION }}.tar.xz -o glibc.tar.xz
           tar -xJf glibc.tar.xz
+          rm glibc.tar.xz
           mv glibc* src
           mkdir build
 
