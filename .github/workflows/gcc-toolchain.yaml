@@ -42,14 +42,8 @@ on:
 
 jobs:
   binutils:
-    strategy:
-      matrix:
-        include:
-          - name: linux_amd64
-            os: ubuntu-latest
-
-    name: "${{ github.job }} ${{ matrix.name }}"
-    runs-on: ${{ matrix.os }}
+    name: "${{ github.job }}"
+    runs-on: ubuntu-latest
     continue-on-error: true
 
     env:
@@ -66,7 +60,6 @@ jobs:
         --disable-nls
         --disable-multilib
         --disable-werror
-      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
 
     steps:
       - name: Get number of CPU cores
@@ -94,7 +87,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
+          ../src/configure ${{ env.CONFIGURE }}
 
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
@@ -115,19 +108,13 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.job }}-${{ matrix.name }}
+          name: ${{ github.job }}
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
 
   kernel_headers:
-    strategy:
-      matrix:
-        include:
-          - name: linux_amd64
-            os: ubuntu-latest
-
-    name: "${{ github.job }} ${{ matrix.name }}"
-    runs-on: ${{ matrix.os }}
+    name: "${{ github.job }}"
+    runs-on: ubuntu-latest
     continue-on-error: true
 
     env:
@@ -170,20 +157,14 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.job }}-${{ matrix.name }}
+          name: ${{ github.job }}
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
           
-  gcc1:
-    strategy:
-      matrix:
-        include:
-          - name: linux_amd64
-            os: ubuntu-latest
-
-    name: "${{ github.job }} ${{ matrix.name }}"
-    runs-on: ${{ matrix.os }}
-    needs: binutils
+  gcc_glibc:
+    name: "${{ github.job }}"
+    runs-on: ubuntu-latest
+    needs: [binutils, kernel_headers]
     continue-on-error: true
 
     env:
@@ -191,7 +172,7 @@ jobs:
       TARGET: ${{ github.event.inputs.target }}
       SYSROOT: ${{ github.event.inputs.sysroot }}
       VERSION: ${{ github.event.inputs.gcc_version }}
-      CONFIGURE: >-
+      GCC_CONFIGURE: >-
         --prefix=${{ github.event.inputs.sysroot }}/tools
         --build=${{ github.event.inputs.build }}
         --host=${{ github.event.inputs.build }}
@@ -213,7 +194,14 @@ jobs:
         --disable-libvtv
         --disable-libstdcxx
         --enable-languages=c,c++
-      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
+      GLIBC_CONFIGURE: >-
+        --prefix=/usr
+        --build=${{ github.event.inputs.build }}
+        --host=${{ github.event.inputs.target }}
+        --target=${{ github.event.inputs.target }}
+        --with-headers=${{ github.event.inputs.sysroot }}/usr/include
+        --disable-multilib
+        --enable-kernel=3.2
 
     steps:
       - name: Get number of CPU cores
@@ -230,7 +218,14 @@ jobs:
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
-          name: binutils-${{ matrix.name }}
+          name: binutils
+          path: ${{ env.SYSROOT }}
+
+      - name: Download kernel_headers
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: kernel_headers
           path: ${{ env.SYSROOT }}
       
       - name: Extract
@@ -238,490 +233,102 @@ jobs:
         working-directory: ${{ env.SYSROOT }}
         run: |
           tar -xJf binutils.tar.xz
+          tar -xJf kernel_headers.tar.xz
           rm *.tar.xz
 
       - uses: actions/cache@v3
         id: cache
         with:
           path: |
-            ${{ github.workspace }}/src
-            ${{ github.workspace }}/build
+            ${{ github.workspace }}/gcc
+            ${{ github.workspace }}/build-gcc
+            ${{ github.workspace }}/glibc
+            ${{ github.workspace }}/build-glibc
           key: gcc-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
-      - name: Download sources
+      - name: Download gcc sources
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           curl -sSL https://ftp.gnu.org/gnu/gcc/gcc-${{ env.VERSION }}/gcc-${{ env.VERSION }}.tar.xz -o gcc.tar.xz
           tar -xJf gcc.tar.xz
           rm gcc.tar.xz
-          mv gcc* src
-          pushd src
+          mv gcc* gcc
+          pushd gcc
           contrib/download_prerequisites
           popd
-          mkdir build
+          mkdir build-gcc
 
-      - name: Update enviornment variables
-        run: |
-          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
-
-      - name: Configure
-        if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: build
-        run: |
-          ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
-
-      - name: Build
-        working-directory: build
-        run: |
-          make -j${{ steps.cpu-cores.outputs.count }} all-gcc
-      
-      - name: Install
-        working-directory: build
-        run: |
-          make install-gcc
-      
-      - name: Archive
-        working-directory: /opt
-        run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
-         
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ github.job }}-${{ matrix.name }}
-          path: /tmp/${{ github.job }}.tar.xz
-          retention-days: 3
-          
-  glibc1:
-    strategy:
-      matrix:
-        include:
-          - name: linux_amd64
-            os: ubuntu-latest
-
-    name: "${{ github.job }} ${{ matrix.name }}"
-    runs-on: ${{ matrix.os }}
-    needs: [kernel_headers, gcc1]
-    continue-on-error: true
-
-    env:
-      ARCH: ${{ github.event.inputs.arch }}
-      TARGET: ${{ github.event.inputs.target }}
-      SYSROOT: ${{ github.event.inputs.sysroot }}
-      VERSION: ${{ github.event.inputs.glibc_version }}
-      CONFIGURE: >-
-        --prefix=${{ github.event.inputs.sysroot }}
-        --build=${{ github.event.inputs.build }}
-        --host=${{ github.event.inputs.target }}
-        --target=${{ github.event.inputs.target }}
-        --with-headers=${{ github.event.inputs.sysroot }}/usr/include
-        --disable-multilib
-        --enable-kernel=3.2
-      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
-
-    steps:
-      - name: Get number of CPU cores
-        uses: SimenB/github-actions-cpu-cores@v1
-        id: cpu-cores
-
-      - uses: actions/cache@v3
-        id: cache_sysroot
-        with:
-          path: ${{ github.event.inputs.sysroot }}
-          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-
-      - name: Download kernel_headers
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v3
-        with:
-          name: kernel_headers-${{ matrix.name }}
-          path: ${{ env.SYSROOT }}
-      
-      - name: Download gcc1
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v3
-        with:
-          name: gcc1-${{ matrix.name }}
-          path: ${{ env.SYSROOT }}
-      
-      - name: Extract
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        working-directory: ${{ env.SYSROOT }}
-        run: |
-          tar -xJf kernel_headers.tar.xz
-          tar -xJf gcc1.tar.xz
-          rm *.tar.xz
-
-      - uses: actions/cache@v3
-        id: cache
-        with:
-          path: |
-            ${{ github.workspace }}/src
-            ${{ github.workspace }}/build
-          key: glibc-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-        
-      - name: Download sources
+      - name: Download glibc sources
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ env.VERSION }}.tar.xz -o glibc.tar.xz
           tar -xJf glibc.tar.xz
           rm glibc.tar.xz
-          mv glibc* src
-          mkdir build
+          mv glibc* glibc
+          mkdir build-glibc
 
       - name: Update enviornment variables
         run: |
           echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
 
-      - name: Configure
+      - name: Configure gcc
         if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: build
+        working-directory: build-gcc
         run: |
-          ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
+          ../src/configure ${{ env.GCC_CONFIGURE }}
 
-      - name: Build
-        working-directory: build
+      - name: Configure glibc
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build-glibc
         run: |
-          make install-bootstrap-headers=yes install-headers
+          ../src/configure ${{ env.GLIBC_CONFIGURE }}
+
+      - name: Build baremetal gcc
+        working-directory: build-gcc
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }} all-gcc
+      
+      - name: Install baremetal gcc
+        working-directory: build-gcc
+        run: |
+          make install-gcc
+
+      - name: Install glibc runtimes
+        working-directory: build-glibc
+        run: |
+          make install-bootstrap-headers=yes DESTDIR=${{ env.SYSROOT }} install-headers
           make -j${{ steps.cpu-cores.outputs.count }} csu/subdir_lib
           mkdir -p ${{ env.SYSROOT }}/lib
           install csu/crt1.o csu/crti.o csu/crtn.o ${{ env.SYSROOT }}/lib
           ${{ github.event.inputs.target }}-gcc -nostdlib -nostartfiles -shared -x c /dev/null -o ${{ env.SYSROOT }}/lib/libc.so
           touch ${{ env.SYSROOT }}/include/gnu/stubs.h
-      
-      - name: Archive
-        working-directory: /opt
-        run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
-         
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ github.job }}-${{ matrix.name }}
-          path: /tmp/${{ github.job }}.tar.xz
-          retention-days: 3
- 
-  gcc2:
-    strategy:
-      matrix:
-        include:
-          - name: linux_amd64
-            os: ubuntu-latest
-
-    name: "${{ github.job }} ${{ matrix.name }}"
-    runs-on: ${{ matrix.os }}
-    needs: glibc1
-    continue-on-error: true
-
-    env:
-      ARCH: ${{ github.event.inputs.arch }}
-      TARGET: ${{ github.event.inputs.target }}
-      SYSROOT: ${{ github.event.inputs.sysroot }}
-      VERSION: ${{ github.event.inputs.gcc_version }}
-      CONFIGURE: >-
-        --prefix=${{ github.event.inputs.sysroot }}/tools
-        --build=${{ github.event.inputs.build }}
-        --host=${{ github.event.inputs.build }}
-        --target=${{ github.event.inputs.target }}
-        --with-sysroot=${{ github.event.inputs.sysroot }}
-        --with-glibc-version=${{ github.event.inputs.glibc_version }}
-        --with-newlib
-        --without-headers
-        --enable-initfini-array
-        --disable-nls
-        --disable-werror
-        --disable-multilib
-        --disable-decimal-float
-        --disable-threads
-        --disable-libatomic
-        --disable-libgomp
-        --disable-libquadmath
-        --disable-libssp
-        --disable-libvtv
-        --disable-libstdcxx
-        --enable-languages=c,c++
-      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
-
-    steps:
-      - name: Get number of CPU cores
-        uses: SimenB/github-actions-cpu-cores@v1
-        id: cpu-cores
-
-      - uses: actions/cache@v3
-        id: cache_sysroot
-        with:
-          path: ${{ github.event.inputs.sysroot }}
-          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-      
-      - name: Download glibc1
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v3
-        with:
-          name: glibc1-${{ matrix.name }}
-          path: ${{ env.SYSROOT }}
-      
-      - name: Extract
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        working-directory: ${{ env.SYSROOT }}
-        run: |
-          tar -xJf glibc1.tar.xz
-          rm *.tar.xz
-
-      - uses: actions/cache@v3
-        id: cache
-        with:
-          path: |
-            ${{ github.workspace }}/src
-            ${{ github.workspace }}/build
-          key: gcc-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-        
-      - name: Download sources
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          curl -sSL https://ftp.gnu.org/gnu/gcc/gcc-${{ env.VERSION }}/gcc-${{ env.VERSION }}.tar.xz -o gcc.tar.xz
-          tar -xJf gcc.tar.xz
-          rm gcc.tar.xz
-          mv gcc* src
-          pushd src
-          contrib/download_prerequisites
-          popd
-          mkdir build
-
-      - name: Update enviornment variables
-        run: |
-          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
-
-      - name: Configure
-        if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: build
-        run: |
-          ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
-
-      - name: Build
-        working-directory: build
+          
+      - name: Build libgcc
+        working-directory: build-gcc
         run: |
           make -j${{ steps.cpu-cores.outputs.count }} all-target-libgcc
       
-      - name: Install
-        working-directory: build
+      - name: Install libgcc
+        working-directory: build-gcc
         run: |
           make install-target-libgcc
-      
-      - name: Archive
-        working-directory: /opt
-        run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
-         
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ github.job }}-${{ matrix.name }}
-          path: /tmp/${{ github.job }}.tar.xz
-          retention-days: 3
 
-  glibc2:
-    strategy:
-      matrix:
-        include:
-          - name: linux_amd64
-            os: ubuntu-latest
-
-    name: "${{ github.job }} ${{ matrix.name }}"
-    runs-on: ${{ matrix.os }}
-    needs: gcc2
-    continue-on-error: true
-
-    env:
-      ARCH: ${{ github.event.inputs.arch }}
-      TARGET: ${{ github.event.inputs.target }}
-      SYSROOT: ${{ github.event.inputs.sysroot }}
-      VERSION: ${{ github.event.inputs.glibc_version }}
-      CONFIGURE: >-
-        --prefix=${{ github.event.inputs.sysroot }}
-        --build=${{ github.event.inputs.build }}
-        --host=${{ github.event.inputs.target }}
-        --target=${{ github.event.inputs.target }}
-        --with-headers=${{ github.event.inputs.sysroot }}/usr/include
-        --disable-multilib
-        --enable-kernel=3.2
-      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
-
-    steps:
-      - name: Get number of CPU cores
-        uses: SimenB/github-actions-cpu-cores@v1
-        id: cpu-cores
-
-      - uses: actions/cache@v3
-        id: cache_sysroot
-        with:
-          path: ${{ github.event.inputs.sysroot }}
-          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-      
-      - name: Download gcc2
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v3
-        with:
-          name: gcc2-${{ matrix.name }}
-          path: ${{ env.SYSROOT }}
-      
-      - name: Extract
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        working-directory: ${{ env.SYSROOT }}
-        run: |
-          tar -xJf gcc2.tar.xz
-          rm *.tar.xz
-
-      - uses: actions/cache@v3
-        id: cache
-        with:
-          path: |
-            ${{ github.workspace }}/src
-            ${{ github.workspace }}/build
-          key: glibc-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-        
-      - name: Download sources
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ env.VERSION }}.tar.xz -o glibc.tar.xz
-          tar -xJf glibc.tar.xz
-          rm glibc.tar.xz
-          mv glibc* src
-          mkdir build
-
-      - name: Update enviornment variables
-        run: |
-          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
-
-      - name: Configure
-        if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: build
-        run: |
-          ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
-
-      - name: Build
-        working-directory: build
+      - name: Build glibc
+        working-directory: build-glibc
         run: |
           make -j${{ steps.cpu-cores.outputs.count }}
 
-      - name: Install
-        working-directory: build
+      - name: Install glibc
+        working-directory: build-glibc
         run: |
-          make install
-      
-      - name: Archive
-        working-directory: /opt
-        run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
-         
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ github.job }}-${{ matrix.name }}
-          path: /tmp/${{ github.job }}.tar.xz
-          retention-days: 3
- 
-  gcc3:
-    strategy:
-      matrix:
-        include:
-          - name: linux_amd64
-            os: ubuntu-latest
+          make DESTDIR=${{ env.SYSROOT }} install
 
-    name: "${{ github.job }} ${{ matrix.name }}"
-    runs-on: ${{ matrix.os }}
-    needs: glibc2
-    continue-on-error: true
-
-    env:
-      ARCH: ${{ github.event.inputs.arch }}
-      TARGET: ${{ github.event.inputs.target }}
-      SYSROOT: ${{ github.event.inputs.sysroot }}
-      VERSION: ${{ github.event.inputs.gcc_version }}
-      CONFIGURE: >-
-        --prefix=${{ github.event.inputs.sysroot }}/tools
-        --build=${{ github.event.inputs.build }}
-        --host=${{ github.event.inputs.build }}
-        --target=${{ github.event.inputs.target }}
-        --with-sysroot=${{ github.event.inputs.sysroot }}
-        --with-glibc-version=${{ github.event.inputs.glibc_version }}
-        --with-newlib
-        --without-headers
-        --enable-initfini-array
-        --disable-nls
-        --disable-werror
-        --disable-multilib
-        --disable-decimal-float
-        --disable-threads
-        --disable-libatomic
-        --disable-libgomp
-        --disable-libquadmath
-        --disable-libssp
-        --disable-libvtv
-        --disable-libstdcxx
-        --enable-languages=c,c++
-      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
-
-    steps:
-      - name: Get number of CPU cores
-        uses: SimenB/github-actions-cpu-cores@v1
-        id: cpu-cores
-
-      - uses: actions/cache@v3
-        id: cache_sysroot
-        with:
-          path: ${{ github.event.inputs.sysroot }}
-          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-      
-      - name: Download glibc2
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v3
-        with:
-          name: glibc2-${{ matrix.name }}
-          path: ${{ env.SYSROOT }}
-      
-      - name: Extract
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        working-directory: ${{ env.SYSROOT }}
-        run: |
-          tar -xJf glibc2.tar.xz
-          rm *.tar.xz
-
-      - uses: actions/cache@v3
-        id: cache
-        with:
-          path: |
-            ${{ github.workspace }}/src
-            ${{ github.workspace }}/build
-          key: gcc-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-        
-      - name: Download sources
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          curl -sSL https://ftp.gnu.org/gnu/gcc/gcc-${{ env.VERSION }}/gcc-${{ env.VERSION }}.tar.xz -o gcc.tar.xz
-          tar -xJf gcc.tar.xz
-          rm gcc.tar.xz
-          mv gcc* src
-          pushd src
-          contrib/download_prerequisites
-          popd
-          mkdir build
-
-      - name: Update enviornment variables
-        run: |
-          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
-
-      - name: Configure
-        if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: build
-        run: |
-          ../src/configure ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
-
-      - name: Build
+      - name: Build gcc
         working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }}
       
-      - name: Install
+      - name: Install gcc
         working-directory: build
         run: |
           make
@@ -734,7 +341,8 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.job }}-${{ matrix.name }}
+          name: ${{ github.job }}
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
+          
   
