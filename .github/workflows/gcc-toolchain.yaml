@@ -324,12 +324,12 @@ jobs:
           make DESTDIR=${{ env.SYSROOT }} install
 
       - name: Build gcc
-        working-directory: build
+        working-directory: build-gcc
         run: |
           make -j${{ steps.cpu-cores.outputs.count }}
       
       - name: Install gcc
-        working-directory: build
+        working-directory: build-gcc
         run: |
           make
       
