@@ -462,10 +462,6 @@ jobs:
         run: |
           echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
           echo "${{ env.SYSROOT }}/bin" >> $GITHUB_PATH
-          echo "C_INCLUDE_PATH=${{ env.SYSROOT }}/usr/include" >> $GITHUB_ENV
-          echo "CPLUS_INCLUDE_PATH=${{ env.SYSROOT }}/usr/include" >> $GITHUB_ENV
-          echo "LIBRARY_PATH=${{ env.SYSROOT }}/lib:${{ env.SYSROOT }}/lib64:${{ env.SYSROOT }}/usr/lib64" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=${{ env.SYSROOT }}/lib:${{ env.SYSROOT }}/lib64:${{ env.SYSROOT }}/usr/lib64" >> $GITHUB_ENV
 
       - name: Configure
         if: steps.cache.outputs.cache-hit != 'true'
@@ -568,10 +564,6 @@ jobs:
         run: |
           echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
           echo "${{ env.SYSROOT }}/bin" >> $GITHUB_PATH
-          echo "C_INCLUDE_PATH=${{ env.SYSROOT }}/usr/include" >> $GITHUB_ENV
-          echo "CPLUS_INCLUDE_PATH=${{ env.SYSROOT }}/usr/include" >> $GITHUB_ENV
-          echo "LIBRARY_PATH=${{ env.SYSROOT }}/lib:${{ env.SYSROOT }}/lib64:${{ env.SYSROOT }}/usr/lib64" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=${{ env.SYSROOT }}/lib:${{ env.SYSROOT }}/lib64:${{ env.SYSROOT }}/usr/lib64" >> $GITHUB_ENV
 
       - name: Configure gcc
         if: steps.cache.outputs.cache-hit != 'true'
