@@ -497,11 +497,10 @@ jobs:
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
           
-          
   binutils2:
     name: "${{ github.job }}"
     runs-on: ubuntu-latest
-    needs: glibc
+    needs: gcc2
     continue-on-error: true
 
     env:
@@ -579,6 +578,107 @@ jobs:
       
       - name: Install
         working-directory: build
+        run: |
+          make install
+      
+      - name: Archive
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}
+          path: /tmp/${{ github.job }}.tar.xz
+          retention-days: 3
+          
+  gcc3:
+    name: "${{ github.job }}"
+    runs-on: ubuntu-latest
+    needs: glibc
+    continue-on-error: true
+
+    env:
+      ARCH: ${{ github.event.inputs.arch }}
+      TARGET: ${{ github.event.inputs.target }}
+      SYSROOT: ${{ github.event.inputs.sysroot }}
+      GCC_CONFIGURE: >-
+        --prefix=${{ github.event.inputs.sysroot }}
+        --host=${{ github.event.inputs.target }}
+        --target=${{ github.event.inputs.target }}
+        --with-sysroot=${{ github.event.inputs.sysroot }}
+        --with-glibc-version=${{ github.event.inputs.glibc_version }}
+        --disable-nls
+        --disable-werror
+        --disable-multilib
+        --enable-languages=c,c++
+
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+
+      - uses: actions/cache@v3
+        id: cache_sysroot
+        with:
+          path: ${{ github.event.inputs.sysroot }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+      
+      - name: Download binutils2
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: binutils2
+          path: ${{ env.SYSROOT }}
+      
+      - name: Extract
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        working-directory: ${{ env.SYSROOT }}
+        run: |
+          tar -xJf binutils2.tar.xz
+          rm *.tar.xz
+
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ${{ github.workspace }}/gcc
+            ${{ github.workspace }}/build-gcc
+            ${{ github.workspace }}/glibc
+            ${{ github.workspace }}/build-glibc
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+        
+      - name: Download gcc sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL https://ftp.gnu.org/gnu/gcc/gcc-${{ github.event.inputs.gcc_version }}/gcc-${{ github.event.inputs.gcc_version }}.tar.xz -o gcc.tar.xz
+          tar -xJf gcc.tar.xz
+          rm gcc.tar.xz
+          mv gcc* gcc
+          pushd gcc
+          contrib/download_prerequisites
+          popd
+          mkdir build-gcc
+
+      - name: Update enviornment variables
+        run: |
+          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
+          echo "${{ env.SYSROOT }}/bin" >> $GITHUB_PATH
+
+      - name: Configure gcc
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build-gcc
+        run: |
+          ../gcc/configure ${{ env.GCC_CONFIGURE }}
+
+      - name: Build gcc
+        working-directory: build-gcc
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }}
+      
+      - name: Install gcc
+        working-directory: build-gcc
         run: |
           make install
       
