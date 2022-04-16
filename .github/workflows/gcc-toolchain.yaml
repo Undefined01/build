@@ -351,7 +351,7 @@ jobs:
   gcc_glibc2:
     name: "${{ github.job }}"
     runs-on: ubuntu-latest
-    needs: [binutils, kernel_headers]
+    needs: gcc_glibc
     continue-on-error: true
 
     env:
@@ -375,7 +375,7 @@ jobs:
         --enable-languages=c,c++
       GLIBC_CONFIGURE: >-
         --prefix=/usr
-        --build=${{ github.event.inputs.build }}
+        --build=${{ github.event.inputs.target }}
         --host=${{ github.event.inputs.target }}
         --target=${{ github.event.inputs.target }}
         --with-headers=${{ github.event.inputs.sysroot }}/usr/include
