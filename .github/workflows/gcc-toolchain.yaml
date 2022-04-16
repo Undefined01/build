@@ -185,6 +185,14 @@ jobs:
         --disable-werror
         --disable-multilib
         --disable-bootstrap 
+        --disable-decimal-float
+        --disable-threads
+        --disable-libatomic
+        --disable-libgomp
+        --disable-libquadmath
+        --disable-libssp
+        --disable-libvtv
+        --disable-libstdcxx
         --enable-languages=c,c++
       GLIBC_CONFIGURE: >-
         --prefix=/usr
@@ -194,7 +202,6 @@ jobs:
         --with-headers=${{ github.event.inputs.sysroot }}/usr/include
         --disable-multilib
         --without-selinux
-        --enable-stack-protector=strong
         --enable-kernel=3.2
 
     steps:
@@ -340,3 +347,145 @@ jobs:
           retention-days: 3
           
   
+          
+  gcc_glibc2:
+    name: "${{ github.job }}"
+    runs-on: ubuntu-latest
+    needs: [binutils, kernel_headers]
+    continue-on-error: true
+
+    env:
+      ARCH: ${{ github.event.inputs.arch }}
+      TARGET: ${{ github.event.inputs.target }}
+      SYSROOT: ${{ github.event.inputs.sysroot }}
+      GCC_CONFIGURE: >-
+        --prefix=${{ github.event.inputs.sysroot }}
+        --build=${{ github.event.inputs.target }}
+        --host=${{ github.event.inputs.target }}
+        --target=${{ github.event.inputs.target }}
+        --with-sysroot=${{ github.event.inputs.sysroot }}
+        --with-glibc-version=${{ github.event.inputs.glibc_version }}
+        --with-newlib
+        --without-headers
+        --enable-initfini-array
+        --disable-nls
+        --disable-werror
+        --disable-multilib
+        --disable-bootstrap 
+        --enable-languages=c,c++
+      GLIBC_CONFIGURE: >-
+        --prefix=/usr
+        --build=${{ github.event.inputs.build }}
+        --host=${{ github.event.inputs.target }}
+        --target=${{ github.event.inputs.target }}
+        --with-headers=${{ github.event.inputs.sysroot }}/usr/include
+        --disable-multilib
+        --without-selinux
+        --enable-stack-protector=strong
+        --enable-kernel=3.2
+
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+
+      - uses: actions/cache@v3
+        id: cache_sysroot
+        with:
+          path: ${{ github.event.inputs.sysroot }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+      
+      - name: Download gcc glibc phase 1
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: gcc_glibc
+          path: ${{ env.SYSROOT }}
+
+      - name: Extract
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        working-directory: ${{ env.SYSROOT }}
+        run: |
+          tar -xJf gcc_glibc.tar.xz
+          rm *.tar.xz
+
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ${{ github.workspace }}/gcc
+            ${{ github.workspace }}/build-gcc
+            ${{ github.workspace }}/glibc
+            ${{ github.workspace }}/build-glibc
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+        
+      - name: Download gcc sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL https://ftp.gnu.org/gnu/gcc/gcc-${{ github.event.inputs.gcc_version }}/gcc-${{ github.event.inputs.gcc_version }}.tar.xz -o gcc.tar.xz
+          tar -xJf gcc.tar.xz
+          rm gcc.tar.xz
+          mv gcc* gcc
+          pushd gcc
+          contrib/download_prerequisites
+          popd
+          mkdir build-gcc
+
+      - name: Download glibc sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ github.event.inputs.glibc_version }}.tar.xz -o glibc.tar.xz
+          tar -xJf glibc.tar.xz
+          rm glibc.tar.xz
+          mv glibc* glibc
+          mkdir build-glibc
+
+      - name: Update enviornment variables
+        run: |
+          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
+          echo "${{ env.SYSROOT }}/bin" >> $GITHUB_PATH
+
+      - name: Configure gcc
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build-gcc
+        run: |
+          ../gcc/configure ${{ env.GCC_CONFIGURE }}
+
+      - name: Configure glibc
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build-glibc
+        run: |
+          ../glibc/configure ${{ env.GLIBC_CONFIGURE }}
+
+      - name: Build glibc
+        working-directory: build-glibc
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }}
+
+      - name: Install glibc
+        working-directory: build-glibc
+        run: |
+          make DESTDIR=${{ env.SYSROOT }} install
+
+      - name: Build gcc
+        working-directory: build-gcc
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }}
+      
+      - name: Install gcc
+        working-directory: build-gcc
+        run: |
+          make
+      
+      - name: Archive
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}
+          path: /tmp/${{ github.job }}.tar.xz
+          retention-days: 3
+          
