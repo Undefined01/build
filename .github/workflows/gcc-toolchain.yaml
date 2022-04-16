@@ -422,6 +422,26 @@ jobs:
         id: cpu-cores
 
       - uses: actions/cache@v3
+        id: cache_sysroot
+        with:
+          path: ${{ github.event.inputs.sysroot }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+      
+      - name: Download glibc
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: glibc
+          path: ${{ env.SYSROOT }}
+
+      - name: Extract
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        working-directory: ${{ env.SYSROOT }}
+        run: |
+          tar -xJf glibc.tar.xz
+          rm *.tar.xz
+
+      - uses: actions/cache@v3
         id: cache
         with:
           path: |
@@ -512,22 +532,14 @@ jobs:
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
-          name: binutils1
-          path: ${{ env.SYSROOT }}
-
-      - name: Download kernel_headers
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v3
-        with:
-          name: kernel_headers
+          name: binutils2
           path: ${{ env.SYSROOT }}
       
       - name: Extract
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         working-directory: ${{ env.SYSROOT }}
         run: |
-          tar -xJf binutils1.tar.xz
-          tar -xJf kernel_headers.tar.xz
+          tar -xJf binutils2.tar.xz
           rm *.tar.xz
 
       - uses: actions/cache@v3
