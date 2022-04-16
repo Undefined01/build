@@ -397,7 +397,7 @@ jobs:
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
           
-  binutils1:
+  binutils2:
     name: "${{ github.job }}"
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -408,9 +408,9 @@ jobs:
       SYSROOT: ${{ github.event.inputs.sysroot }}
       VERSION: ${{ github.event.inputs.binutils_version }}
       CONFIGURE: >-
-        --prefix=${{ github.event.inputs.sysroot }}/tools
+        --prefix=${{ github.event.inputs.sysroot }}
         --with-sysroot=${{ github.event.inputs.sysroot }}
-        --host=${{ github.event.inputs.build }}
+        --host=${{ github.event.inputs.target }}
         --target=${{ github.event.inputs.target }}
         --disable-nls
         --disable-multilib
@@ -437,6 +437,11 @@ jobs:
           rm binutils.tar.xz
           mv binutils* src
           mkdir build
+
+      - name: Update enviornment variables
+        run: |
+          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
+          echo "${{ env.SYSROOT }}/bin" >> $GITHUB_PATH
 
       - name: Configure
         if: steps.cache.outputs.cache-hit != 'true'
@@ -466,60 +471,11 @@ jobs:
           name: ${{ github.job }}
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
-
-  kernel_headers:
-    name: "${{ github.job }}"
-    runs-on: ubuntu-latest
-    continue-on-error: true
-
-    env:
-      ARCH: ${{ github.event.inputs.arch }}
-      TARGET: ${{ github.event.inputs.target }}
-      SYSROOT: ${{ github.event.inputs.sysroot }}
-      VERSION: ${{ github.event.inputs.kernel_url }}
-
-    steps:
-      - name: Get number of CPU cores
-        uses: SimenB/github-actions-cpu-cores@v1
-        id: cpu-cores
-
-      - uses: actions/cache@v3
-        id: cache
-        with:
-          path: |
-            ${{ github.workspace }}/src
-            ${{ github.workspace }}/build
-          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-        
-      - name: Download sources
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          curl -sSL ${{ env.VERSION }} -o kernel.tar.xz
-          tar -xJf kernel.tar.xz
-          rm kernel.tar.xz
-          mv linux* src
-          
-      - name: Install
-        working-directory: src
-        run: |
-          make ARCH=${{ env.ARCH }} INSTALL_HDR_PATH=${{ env.SYSROOT }}/usr headers_install
-      
-      - name: Archive
-        working-directory: /opt
-        run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
-         
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ github.job }}
-          path: /tmp/${{ github.job }}.tar.xz
-          retention-days: 3
           
   gcc2:
     name: "${{ github.job }}"
     runs-on: ubuntu-latest
-    needs: glibc
+    needs: binutils2
     continue-on-error: true
 
     env:
@@ -595,6 +551,7 @@ jobs:
       - name: Update enviornment variables
         run: |
           echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
+          echo "${{ env.SYSROOT }}/bin" >> $GITHUB_PATH
 
       - name: Configure gcc
         if: steps.cache.outputs.cache-hit != 'true'
