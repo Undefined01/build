@@ -184,6 +184,7 @@ jobs:
         --disable-nls
         --disable-werror
         --disable-multilib
+        --disable-bootstrap 
         --enable-languages=c,c++
       GLIBC_CONFIGURE: >-
         --prefix=/usr
