@@ -396,7 +396,7 @@ jobs:
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
           
-  binutils2:
+  gcc2:
     name: "${{ github.job }}"
     runs-on: ubuntu-latest
     needs: glibc
@@ -406,105 +406,9 @@ jobs:
       ARCH: ${{ github.event.inputs.arch }}
       TARGET: ${{ github.event.inputs.target }}
       SYSROOT: ${{ github.event.inputs.sysroot }}
-      VERSION: ${{ github.event.inputs.binutils_version }}
-      CONFIGURE: >-
-        --prefix=${{ github.event.inputs.sysroot }}
-        --with-sysroot=${{ github.event.inputs.sysroot }}
-        --host=${{ github.event.inputs.target }}
-        --target=${{ github.event.inputs.target }}
-        --disable-nls
-        --disable-multilib
-        --disable-werror
-
-    steps:
-      - name: Get number of CPU cores
-        uses: SimenB/github-actions-cpu-cores@v1
-        id: cpu-cores
-
-      - uses: actions/cache@v3
-        id: cache_sysroot
-        with:
-          path: ${{ github.event.inputs.sysroot }}
-          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-      
-      - name: Download glibc
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v3
-        with:
-          name: glibc
-          path: ${{ env.SYSROOT }}
-
-      - name: Extract
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
-        working-directory: ${{ env.SYSROOT }}
-        run: |
-          tar -xJf glibc.tar.xz
-          rm *.tar.xz
-
-      - uses: actions/cache@v3
-        id: cache
-        with:
-          path: |
-            ${{ github.workspace }}/src
-            ${{ github.workspace }}/build
-          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-        
-      - name: Download sources
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          curl -sSL https://ftp.gnu.org/gnu/binutils/binutils-${{ env.VERSION }}.tar.xz -o binutils.tar.xz
-          tar -xJf binutils.tar.xz
-          rm binutils.tar.xz
-          mv binutils* src
-          mkdir build
-
-      - name: Update enviornment variables
-        run: |
-          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
-          echo "${{ env.SYSROOT }}/bin" >> $GITHUB_PATH
-
-      - name: Configure
-        if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: build
-        run: |
-          ../src/configure ${{ env.CONFIGURE }}
-
-      - name: Build
-        if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: build
-        run: |
-          make -j${{ steps.cpu-cores.outputs.count }}
-      
-      - name: Install
-        working-directory: build
-        run: |
-          make install
-      
-      - name: Archive
-        working-directory: /opt
-        run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
-         
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ github.job }}
-          path: /tmp/${{ github.job }}.tar.xz
-          retention-days: 3
-          
-  gcc2:
-    name: "${{ github.job }}"
-    runs-on: ubuntu-latest
-    needs: binutils2
-    continue-on-error: true
-
-    env:
-      ARCH: ${{ github.event.inputs.arch }}
-      TARGET: ${{ github.event.inputs.target }}
-      SYSROOT: ${{ github.event.inputs.sysroot }}
       GCC_CONFIGURE: >-
         --prefix=${{ github.event.inputs.sysroot }}
-        --host=${{ github.event.inputs.target }}
+        --host=${{ github.event.inputs.build }}
         --target=${{ github.event.inputs.target }}
         --with-sysroot=${{ github.event.inputs.sysroot }}
         --with-glibc-version=${{ github.event.inputs.glibc_version }}
@@ -524,18 +428,18 @@ jobs:
           path: ${{ github.event.inputs.sysroot }}
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
       
-      - name: Download binutils
+      - name: Download glibc
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
-          name: binutils2
+          name: glibc
           path: ${{ env.SYSROOT }}
       
       - name: Extract
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         working-directory: ${{ env.SYSROOT }}
         run: |
-          tar -xJf binutils2.tar.xz
+          tar -xJf glibc.tar.xz
           rm *.tar.xz
 
       - uses: actions/cache@v3
@@ -593,3 +497,99 @@ jobs:
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
           
+          
+  binutils2:
+    name: "${{ github.job }}"
+    runs-on: ubuntu-latest
+    needs: glibc
+    continue-on-error: true
+
+    env:
+      ARCH: ${{ github.event.inputs.arch }}
+      TARGET: ${{ github.event.inputs.target }}
+      SYSROOT: ${{ github.event.inputs.sysroot }}
+      VERSION: ${{ github.event.inputs.binutils_version }}
+      CONFIGURE: >-
+        --prefix=${{ github.event.inputs.sysroot }}
+        --with-sysroot=${{ github.event.inputs.sysroot }}
+        --host=${{ github.event.inputs.target }}
+        --target=${{ github.event.inputs.target }}
+        --disable-nls
+        --disable-multilib
+        --disable-werror
+
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+
+      - uses: actions/cache@v3
+        id: cache_sysroot
+        with:
+          path: ${{ github.event.inputs.sysroot }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+      
+      - name: Download gcc2
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: gcc2
+          path: ${{ env.SYSROOT }}
+
+      - name: Extract
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        working-directory: ${{ env.SYSROOT }}
+        run: |
+          tar -xJf gcc2.tar.xz
+          rm *.tar.xz
+
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ${{ github.workspace }}/src
+            ${{ github.workspace }}/build
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+        
+      - name: Download sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL https://ftp.gnu.org/gnu/binutils/binutils-${{ env.VERSION }}.tar.xz -o binutils.tar.xz
+          tar -xJf binutils.tar.xz
+          rm binutils.tar.xz
+          mv binutils* src
+          mkdir build
+
+      - name: Update enviornment variables
+        run: |
+          echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
+          echo "${{ env.SYSROOT }}/bin" >> $GITHUB_PATH
+
+      - name: Configure
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          ../src/configure ${{ env.CONFIGURE }}
+
+      - name: Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }}
+      
+      - name: Install
+        working-directory: build
+        run: |
+          make install
+      
+      - name: Archive
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}
+          path: /tmp/${{ github.job }}.tar.xz
+          retention-days: 3
