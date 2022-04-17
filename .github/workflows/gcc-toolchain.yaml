@@ -554,6 +554,20 @@ jobs:
         with:
           path: ${{ github.event.inputs.sysroot }}
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+
+      - name: Download kernel_headers
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: kernel_headers
+          path: ${{ env.SYSROOT }}
+
+      - name: Download glibc
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: glibc
+          path: ${{ env.SYSROOT }}
       
       - name: Download gcc2
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
@@ -566,6 +580,8 @@ jobs:
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         working-directory: ${{ env.SYSROOT }}
         run: |
+          tar -xJf kernel_headers.tar.xz
+          tar -xJf glibc.tar.xz
           tar -xJf gcc2.tar.xz
           rm *.tar.xz
 
@@ -606,12 +622,12 @@ jobs:
       - name: Install
         working-directory: build
         run: |
-          make install
+          make DESTDIR=/tmp install
       
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C /tmp/${{ env.SYSROOT }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -651,6 +667,20 @@ jobs:
         with:
           path: ${{ github.event.inputs.sysroot }}
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+
+      - name: Download kernel_headers
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: kernel_headers
+          path: ${{ env.SYSROOT }}
+
+      - name: Download glibc
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: glibc
+          path: ${{ env.SYSROOT }}
       
       - name: Download binutils2
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
@@ -663,6 +693,8 @@ jobs:
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         working-directory: ${{ env.SYSROOT }}
         run: |
+          tar -xJf kernel_headers.tar.xz
+          tar -xJf glibc.tar.xz
           tar -xJf binutils2.tar.xz
           rm *.tar.xz
 
@@ -670,9 +702,7 @@ jobs:
         id: cache
         with:
           path: |
-            ${{ github.workspace }}/gcc
-            ${{ github.workspace }}/build
-            ${{ github.workspace }}/glibc
+            ${{ github.workspace }}/src
             ${{ github.workspace }}/build
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
@@ -682,8 +712,8 @@ jobs:
           curl -sSL https://ftp.gnu.org/gnu/gcc/gcc-${{ github.event.inputs.gcc_version }}/gcc-${{ github.event.inputs.gcc_version }}.tar.xz -o gcc.tar.xz
           tar -xJf gcc.tar.xz
           rm gcc.tar.xz
-          mv gcc* gcc
-          pushd gcc
+          mv gcc* src
+          pushd src
           contrib/download_prerequisites
           popd
           mkdir build
@@ -697,7 +727,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          ../gcc/configure ${{ env.CONFIGURE }}
+          ../src/configure ${{ env.CONFIGURE }}
 
       - name: Build gcc
         working-directory: build
@@ -707,12 +737,12 @@ jobs:
       - name: Install gcc
         working-directory: build
         run: |
-          make install
+          make DESTDIR=/tmp install
       
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C /tmp/${{ env.SYSROOT }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
