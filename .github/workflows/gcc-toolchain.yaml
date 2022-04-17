@@ -170,7 +170,7 @@ jobs:
       ARCH: ${{ github.event.inputs.arch }}
       TARGET: ${{ github.event.inputs.target }}
       SYSROOT: ${{ github.event.inputs.sysroot }}
-      GCC_CONFIGURE: >-
+      CONFIGURE: >-
         --prefix=${{ github.event.inputs.sysroot }}/tools
         --host=${{ github.event.inputs.build }}
         --target=${{ github.event.inputs.target }}
@@ -192,14 +192,6 @@ jobs:
         --disable-libssp
         --disable-libvtv
         --enable-languages=c,c++
-      GLIBC_CONFIGURE: >-
-        --prefix=/usr
-        --host=${{ github.event.inputs.target }}
-        --target=${{ github.event.inputs.target }}
-        --with-headers=${{ github.event.inputs.sysroot }}/usr/include
-        --disable-multilib
-        --without-selinux
-        --enable-kernel=3.2
 
     steps:
       - name: Get number of CPU cores
@@ -238,10 +230,8 @@ jobs:
         id: cache
         with:
           path: |
-            ${{ github.workspace }}/gcc
-            ${{ github.workspace }}/build-gcc
-            ${{ github.workspace }}/glibc
-            ${{ github.workspace }}/build-glibc
+            ${{ github.workspace }}/src
+            ${{ github.workspace }}/build
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download gcc sources
@@ -250,11 +240,11 @@ jobs:
           curl -sSL https://ftp.gnu.org/gnu/gcc/gcc-${{ github.event.inputs.gcc_version }}/gcc-${{ github.event.inputs.gcc_version }}.tar.xz -o gcc.tar.xz
           tar -xJf gcc.tar.xz
           rm gcc.tar.xz
-          mv gcc* gcc
-          pushd gcc
+          mv gcc* src
+          pushd src
           contrib/download_prerequisites
           popd
-          mkdir build-gcc
+          mkdir build
 
       - name: Update enviornment variables
         run: |
@@ -262,34 +252,33 @@ jobs:
 
       - name: Configure gcc
         if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: build-gcc
+        working-directory: build
         run: |
-          ../gcc/configure ${{ env.GCC_CONFIGURE }}
+          ../src/configure ${{ env.CONFIGURE }}
 
       - name: Build baremetal gcc
-        working-directory: build-gcc
+        working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }} all-gcc
       
       - name: Install baremetal gcc
-        working-directory: build-gcc
+        working-directory: build
         run: |
-          make install-gcc
+          make DESTDIR=/tmp install-gcc
           
       - name: Build libgcc
-        working-directory: build-gcc
+        working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }} all-target-libgcc
       
       - name: Install libgcc
-        working-directory: build-gcc
+        working-directory: build
         run: |
-          make install-target-libgcc
+          make DESTDIR=/tmp install-target-libgcc
       
       - name: Archive
-        working-directory: /opt
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C /tmp/${{ env.SYSROOT }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -308,7 +297,7 @@ jobs:
       ARCH: ${{ github.event.inputs.arch }}
       TARGET: ${{ github.event.inputs.target }}
       SYSROOT: ${{ github.event.inputs.sysroot }}
-      GLIBC_CONFIGURE: >-
+      CONFIGURE: >-
         --prefix=/usr
         --build=${{ github.event.inputs.target }}
         --host=${{ github.event.inputs.target }}
@@ -330,28 +319,42 @@ jobs:
           path: ${{ github.event.inputs.sysroot }}
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
       
-      - name: Download gcc phase 1
+      - name: Download binutils
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
-          name: gcc1
+          name: binutils1
+          path: ${{ env.SYSROOT }}
+
+      - name: Download kernel_headers
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: kernel_headers
+          path: ${{ env.SYSROOT }}
+
+      - name: Download glibc
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: glibc
           path: ${{ env.SYSROOT }}
 
       - name: Extract
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         working-directory: ${{ env.SYSROOT }}
         run: |
-          tar -xJf gcc1.tar.xz
+          tar -xJf binutils1.tar.xz
+          tar -xJf kernel_headers.tar.xz
+          tar -xJf glibc.tar.xz
           rm *.tar.xz
 
       - uses: actions/cache@v3
         id: cache
         with:
           path: |
-            ${{ github.workspace }}/gcc
-            ${{ github.workspace }}/build-gcc
-            ${{ github.workspace }}/glibc
-            ${{ github.workspace }}/build-glibc
+            ${{ github.workspace }}/src
+            ${{ github.workspace }}/build
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
 
       - name: Download glibc sources
@@ -360,8 +363,8 @@ jobs:
           curl -sSL https://ftp.gnu.org/gnu/glibc/glibc-${{ github.event.inputs.glibc_version }}.tar.xz -o glibc.tar.xz
           tar -xJf glibc.tar.xz
           rm glibc.tar.xz
-          mv glibc* glibc
-          mkdir build-glibc
+          mv glibc* src
+          mkdir build
 
       - name: Update enviornment variables
         run: |
@@ -370,24 +373,24 @@ jobs:
 
       - name: Configure glibc
         if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: build-glibc
+        working-directory: build
         run: |
-          ../glibc/configure ${{ env.GLIBC_CONFIGURE }}
+          ../src/configure ${{ env.CONFIGURE }}
 
       - name: Build glibc
-        working-directory: build-glibc
+        working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }}
 
       - name: Install glibc
-        working-directory: build-glibc
+        working-directory: build
         run: |
-          make DESTDIR=${{ env.SYSROOT }} install
+          make DESTDIR=/tmp/${{ env.SYSROOT }} install
       
       - name: Archive
         working-directory: /opt
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C /tmp/${{ env.SYSROOT }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -406,15 +409,27 @@ jobs:
       ARCH: ${{ github.event.inputs.arch }}
       TARGET: ${{ github.event.inputs.target }}
       SYSROOT: ${{ github.event.inputs.sysroot }}
-      GCC_CONFIGURE: >-
-        --prefix=${{ github.event.inputs.sysroot }}
+      CONFIGURE: >-
+        --prefix=${{ github.event.inputs.sysroot }}/tools
         --host=${{ github.event.inputs.build }}
         --target=${{ github.event.inputs.target }}
         --with-sysroot=${{ github.event.inputs.sysroot }}
         --with-glibc-version=${{ github.event.inputs.glibc_version }}
+        --with-newlib
+        --without-headers
+        --enable-initfini-array
         --disable-nls
         --disable-werror
         --disable-multilib
+        --disable-shared
+        --disable-bootstrap 
+        --disable-decimal-float
+        --disable-threads
+        --disable-libatomic
+        --disable-libgomp
+        --disable-libquadmath
+        --disable-libssp
+        --disable-libvtv
         --enable-languages=c,c++
 
     steps:
@@ -428,6 +443,20 @@ jobs:
           path: ${{ github.event.inputs.sysroot }}
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
       
+      - name: Download binutils
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: binutils1
+          path: ${{ env.SYSROOT }}
+
+      - name: Download kernel_headers
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: kernel_headers
+          path: ${{ env.SYSROOT }}
+
       - name: Download glibc
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
@@ -439,6 +468,8 @@ jobs:
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         working-directory: ${{ env.SYSROOT }}
         run: |
+          tar -xJf binutils1.tar.xz
+          tar -xJf kernel_headers.tar.xz
           tar -xJf glibc.tar.xz
           rm *.tar.xz
 
@@ -446,10 +477,8 @@ jobs:
         id: cache
         with:
           path: |
-            ${{ github.workspace }}/gcc
-            ${{ github.workspace }}/build-gcc
-            ${{ github.workspace }}/glibc
-            ${{ github.workspace }}/build-glibc
+            ${{ github.workspace }}/src
+            ${{ github.workspace }}/build
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download gcc sources
@@ -458,37 +487,35 @@ jobs:
           curl -sSL https://ftp.gnu.org/gnu/gcc/gcc-${{ github.event.inputs.gcc_version }}/gcc-${{ github.event.inputs.gcc_version }}.tar.xz -o gcc.tar.xz
           tar -xJf gcc.tar.xz
           rm gcc.tar.xz
-          mv gcc* gcc
-          pushd gcc
+          mv gcc* src
+          pushd src
           contrib/download_prerequisites
           popd
-          mkdir build-gcc
+          mkdir build
 
       - name: Update enviornment variables
         run: |
           echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
-          echo "${{ env.SYSROOT }}/bin" >> $GITHUB_PATH
 
       - name: Configure gcc
         if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: build-gcc
+        working-directory: build
         run: |
-          ../gcc/configure ${{ env.GCC_CONFIGURE }}
+          ../src/configure ${{ env.CONFIGURE }}
 
       - name: Build gcc
-        working-directory: build-gcc
+        working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }}
       
       - name: Install gcc
-        working-directory: build-gcc
+        working-directory: build
         run: |
-          make install
+          make DESTDIR=/tmp install
       
       - name: Archive
-        working-directory: /opt
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.SYSROOT }} .
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C /tmp/${{ env.SYSROOT }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -603,7 +630,7 @@ jobs:
       ARCH: ${{ github.event.inputs.arch }}
       TARGET: ${{ github.event.inputs.target }}
       SYSROOT: ${{ github.event.inputs.sysroot }}
-      GCC_CONFIGURE: >-
+      CONFIGURE: >-
         --prefix=${{ github.event.inputs.sysroot }}
         --host=${{ github.event.inputs.target }}
         --target=${{ github.event.inputs.target }}
@@ -644,9 +671,9 @@ jobs:
         with:
           path: |
             ${{ github.workspace }}/gcc
-            ${{ github.workspace }}/build-gcc
+            ${{ github.workspace }}/build
             ${{ github.workspace }}/glibc
-            ${{ github.workspace }}/build-glibc
+            ${{ github.workspace }}/build
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
         
       - name: Download gcc sources
@@ -659,7 +686,7 @@ jobs:
           pushd gcc
           contrib/download_prerequisites
           popd
-          mkdir build-gcc
+          mkdir build
 
       - name: Update enviornment variables
         run: |
@@ -668,17 +695,17 @@ jobs:
 
       - name: Configure gcc
         if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: build-gcc
+        working-directory: build
         run: |
-          ../gcc/configure ${{ env.GCC_CONFIGURE }}
+          ../gcc/configure ${{ env.CONFIGURE }}
 
       - name: Build gcc
-        working-directory: build-gcc
+        working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }}
       
       - name: Install gcc
-        working-directory: build-gcc
+        working-directory: build
         run: |
           make install
       
