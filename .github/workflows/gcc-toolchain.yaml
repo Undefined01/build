@@ -301,9 +301,7 @@ jobs:
       SYSROOT: ${{ github.event.inputs.sysroot }}
       CONFIGURE: >-
         --prefix=/usr
-        --build=${{ github.event.inputs.target }}
         --host=${{ github.event.inputs.target }}
-        --target=${{ github.event.inputs.target }}
         --with-headers=${{ github.event.inputs.sysroot }}/usr/include
         --disable-multilib
         --without-selinux
@@ -412,14 +410,29 @@ jobs:
       TARGET: ${{ github.event.inputs.target }}
       SYSROOT: ${{ github.event.inputs.sysroot }}
       CONFIGURE: >-
-        --prefix=/usr
-        --host=${{ github.event.inputs.target }}
+        --prefix=${{ github.event.inputs.sysroot }}/tools
+        --host=${{ github.event.inputs.build }}
+        --target=${{ github.event.inputs.target }}
         --with-sysroot=${{ github.event.inputs.sysroot }}
+        --with-glibc-version=${{ github.event.inputs.glibc_version }}
+        --with-newlib
+        --without-headers
+        --enable-initfini-array
         --disable-nls
         --disable-werror
         --disable-multilib
-        --disable-libstdcxx-pch
-        --with-gxx-include-dir=/tools/${{ github.event.inputs.target }}/include/c++/${{ github.event.inputs.gcc_version }}
+        --disable-shared
+        --disable-bootstrap 
+        --disable-decimal-float
+        --disable-threads
+        --disable-libatomic
+        --disable-libgomp
+        --disable-libmpx
+        --disable-libquadmath
+        --disable-libssp
+        --disable-libvtv
+        --disable-libstdcxx
+        --enable-languages=c,c++
 
     steps:
       - name: Get number of CPU cores
@@ -498,17 +511,17 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          ../src/libstdc++-v3/configure ${{ env.CONFIGURE }}
+          ../src/configure ${{ env.CONFIGURE }}
 
       - name: Build libstdcxx
         working-directory: build
         run: |
-          make -j${{ steps.cpu-cores.outputs.count }}
+          make -j${{ steps.cpu-cores.outputs.count }} all-target-libstdc++-v3
       
       - name: Install libstdcxx
         working-directory: build
         run: |
-          make DESTDIR=/tmp/${{ env.SYSROOT }} install
+          make DESTDIR=/tmp/${{ env.SYSROOT }} install-target-libstdc++-v3
       
       - name: Archive
         run: |
