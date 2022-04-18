@@ -415,8 +415,6 @@ jobs:
         --target=${{ github.event.inputs.target }}
         --with-sysroot=${{ github.event.inputs.sysroot }}
         --with-glibc-version=${{ github.event.inputs.glibc_version }}
-        --with-newlib
-        --without-headers
         --enable-initfini-array
         --disable-nls
         --disable-werror
