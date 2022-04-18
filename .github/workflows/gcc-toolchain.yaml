@@ -333,11 +333,11 @@ jobs:
           name: kernel_headers
           path: ${{ env.SYSROOT }}
 
-      - name: Download glibc
+      - name: Download gcc phase 1
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
-          name: glibc
+          name: gcc1
           path: ${{ env.SYSROOT }}
 
       - name: Extract
@@ -346,7 +346,7 @@ jobs:
         run: |
           tar -xJf binutils1.tar.xz
           tar -xJf kernel_headers.tar.xz
-          tar -xJf glibc.tar.xz
+          tar -xJf gcc1.tar.xz
           rm *.tar.xz
 
       - uses: actions/cache@v3
