@@ -188,9 +188,11 @@ jobs:
         --disable-threads
         --disable-libatomic
         --disable-libgomp
+        --disable-libmpx
         --disable-libquadmath
         --disable-libssp
         --disable-libvtv
+        --disable-libstdcxx
         --enable-languages=c,c++
 
     steps:
@@ -427,9 +429,11 @@ jobs:
         --disable-threads
         --disable-libatomic
         --disable-libgomp
+        --disable-libmpx
         --disable-libquadmath
         --disable-libssp
         --disable-libvtv
+        --disable-libstdcxx
         --enable-languages=c,c++
 
     steps:
@@ -682,6 +686,20 @@ jobs:
           name: glibc
           path: ${{ env.SYSROOT }}
       
+      - name: Download binutils1
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: binutils1
+          path: ${{ env.SYSROOT }}
+      
+      - name: Download gcc2
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: gcc2
+          path: ${{ env.SYSROOT }}
+      
       - name: Download binutils2
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
@@ -695,6 +713,8 @@ jobs:
         run: |
           tar -xJf kernel_headers.tar.xz
           tar -xJf glibc.tar.xz
+          tar -xJf binutils1.tar.xz
+          tar -xJf gcc2.tar.xz
           tar -xJf binutils2.tar.xz
           rm *.tar.xz
 
