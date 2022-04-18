@@ -421,7 +421,6 @@ jobs:
         --disable-nls
         --disable-werror
         --disable-multilib
-        --disable-shared
         --disable-bootstrap 
         --disable-decimal-float
         --disable-threads
@@ -431,7 +430,6 @@ jobs:
         --disable-libquadmath
         --disable-libssp
         --disable-libvtv
-        --disable-libstdcxx
         --enable-languages=c,c++
 
     steps:
