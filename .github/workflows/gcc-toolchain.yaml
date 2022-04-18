@@ -401,7 +401,7 @@ jobs:
           path: /tmp/${{ github.job }}.tar.xz
           retention-days: 3
           
-  gcc2:
+  libstdcxx:
     name: "${{ github.job }}"
     runs-on: ubuntu-latest
     needs: glibc
@@ -412,29 +412,14 @@ jobs:
       TARGET: ${{ github.event.inputs.target }}
       SYSROOT: ${{ github.event.inputs.sysroot }}
       CONFIGURE: >-
-        --prefix=${{ github.event.inputs.sysroot }}/tools
-        --host=${{ github.event.inputs.build }}
-        --target=${{ github.event.inputs.target }}
+        --prefix=/usr
+        --host=${{ github.event.inputs.target }}
         --with-sysroot=${{ github.event.inputs.sysroot }}
-        --with-glibc-version=${{ github.event.inputs.glibc_version }}
-        --with-newlib
-        --without-headers
-        --enable-initfini-array
         --disable-nls
         --disable-werror
         --disable-multilib
-        --disable-shared
-        --disable-bootstrap 
-        --disable-decimal-float
-        --disable-threads
-        --disable-libatomic
-        --disable-libgomp
-        --disable-libmpx
-        --disable-libquadmath
-        --disable-libssp
-        --disable-libvtv
-        --disable-libstdcxx
-        --enable-languages=c,c++
+        --disable-libstdcxx-pch
+        --with-gxx-include-dir=/tools/${{ github.event.inputs.target }}/include/c++/${{ github.event.inputs.gcc_version }}
 
     steps:
       - name: Get number of CPU cores
@@ -461,6 +446,13 @@ jobs:
           name: kernel_headers
           path: ${{ env.SYSROOT }}
 
+      - name: Download gcc1
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: gcc1
+          path: ${{ env.SYSROOT }}
+
       - name: Download glibc
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
@@ -474,6 +466,7 @@ jobs:
         run: |
           tar -xJf binutils1.tar.xz
           tar -xJf kernel_headers.tar.xz
+          tar -xJf gcc1.tar.xz
           tar -xJf glibc.tar.xz
           rm *.tar.xz
 
@@ -501,21 +494,21 @@ jobs:
         run: |
           echo "${{ env.SYSROOT }}/tools/bin" >> $GITHUB_PATH
 
-      - name: Configure gcc
+      - name: Configure libstdcxx
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          ../src/configure ${{ env.CONFIGURE }}
+          ../src/libstdc++-v3/configure ${{ env.CONFIGURE }}
 
-      - name: Build gcc
+      - name: Build libstdcxx
         working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }}
       
-      - name: Install gcc
+      - name: Install libstdcxx
         working-directory: build
         run: |
-          make DESTDIR=/tmp install
+          make DESTDIR=/tmp/${{ env.SYSROOT }} install
       
       - name: Archive
         run: |
@@ -565,6 +558,13 @@ jobs:
         with:
           name: kernel_headers
           path: ${{ env.SYSROOT }}
+      
+      - name: Download gcc1
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: gcc1
+          path: ${{ env.SYSROOT }}
 
       - name: Download glibc
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
@@ -573,11 +573,11 @@ jobs:
           name: glibc
           path: ${{ env.SYSROOT }}
       
-      - name: Download gcc2
+      - name: Download libstdcxx
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
-          name: gcc2
+          name: libstdcxx
           path: ${{ env.SYSROOT }}
 
       - name: Extract
@@ -585,8 +585,9 @@ jobs:
         working-directory: ${{ env.SYSROOT }}
         run: |
           tar -xJf kernel_headers.tar.xz
+          tar -xJf gcc1.tar.xz
           tar -xJf glibc.tar.xz
-          tar -xJf gcc2.tar.xz
+          tar -xJf libstdcxx.tar.xz
           rm *.tar.xz
 
       - uses: actions/cache@v3
@@ -693,11 +694,18 @@ jobs:
           name: binutils1
           path: ${{ env.SYSROOT }}
       
-      - name: Download gcc2
+      - name: Download gcc1
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
-          name: gcc2
+          name: gcc1
+          path: ${{ env.SYSROOT }}
+      
+      - name: Download libstdcxx
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: libstdcxx
           path: ${{ env.SYSROOT }}
       
       - name: Download binutils2
@@ -714,7 +722,8 @@ jobs:
           tar -xJf kernel_headers.tar.xz
           tar -xJf glibc.tar.xz
           tar -xJf binutils1.tar.xz
-          tar -xJf gcc2.tar.xz
+          tar -xJf gcc1.tar.xz
+          tar -xJf libstdcxx.tar.xz
           tar -xJf binutils2.tar.xz
           rm *.tar.xz
 
