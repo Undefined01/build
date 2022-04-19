@@ -512,12 +512,12 @@ jobs:
       - name: Build libstdcxx
         working-directory: build
         run: |
-          make -j${{ steps.cpu-cores.outputs.count }} all-target-libstdc++-v3
+          make -j${{ steps.cpu-cores.outputs.count }}
       
       - name: Install libstdcxx
         working-directory: build
         run: |
-          make DESTDIR=/tmp/${{ env.SYSROOT }} install-target-libstdc++-v3
+          make DESTDIR=/tmp/${{ env.SYSROOT }}
       
       - name: Archive
         run: |
