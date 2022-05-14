@@ -122,7 +122,7 @@ jobs:
       - name: Download sources
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          git clone -b ${{ env.VERSION }} --depth 1 https://github.com/videolan/x265 src
+          git clone -b ${{ env.VERSION }} --depth 1 https://bitbucket.org/multicoreware/x265_git src
           mkdir build
 
       - name: Configure
@@ -233,6 +233,11 @@ jobs:
             ${{ github.workspace }}/build
             ${{ github.event.inputs.prefix }}
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+
+      - name: Install build dependency
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get install -qq -y nasm yasm
     
       - name: Download sources
         if: steps.cache.outputs.cache-hit != 'true'
