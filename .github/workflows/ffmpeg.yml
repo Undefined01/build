@@ -298,15 +298,13 @@ jobs:
         --disable-shared
         --enable-static
         --pkg-config-flags="--static"
-        --extra-cflags="-I${{ github.event.inputs.prefix }}/include"
-        --extra-ldflags="-L${{ github.event.inputs.prefix }}/lib"
+        --extra-cflags="-I${{ github.event.inputs.prefix }}/include -static"
+        --extra-ldflags="-L${{ github.event.inputs.prefix }}/lib -static"
         --prefix="${{ github.event.inputs.prefix }}"
         --disable-libxcb
         --enable-libopus
         --enable-libx264
         --enable-libsvtav1
-        --extra-libs=-ldl
-        --extra-libs=-lpthread
 
     steps:
       - name: Get number of CPU cores
