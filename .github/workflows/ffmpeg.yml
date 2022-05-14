@@ -8,15 +8,15 @@ on:
         required: true
         default: 5.0.1
       x264-version:
-        description: The version of FFmpeg
+        description: The version of x264
         required: true
         default: stable
       x265-version:
-        description: The version of FFmpeg
+        description: The version of x265
         required: true
         default: Release_3.5
       opus-version:
-        description: The version of FFmpeg
+        description: The version of opus
         required: true
         default: 1.3.1
       prefix:
@@ -35,7 +35,7 @@ jobs:
     continue-on-error: true
     env:
       VERSION: ${{ github.event.inputs.x264-version }}
-      PREFIX: /opt/ffmpeg
+      PREFIX: ${{ github.event.inputs. }}
       
     steps:
       - name: Get number of CPU cores
@@ -51,10 +51,15 @@ jobs:
             ${{ github.event.inputs.prefix }}
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
           
+      - name: Install build dependency
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          apt-get install -qq -y nasm yasm
+          
       - name: Download sources
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          git clone -b stable --depth 1 https://code.videolan.org/videolan/x264 src
+          git clone -b ${{ env.VERSION }} --depth 1 https://code.videolan.org/videolan/x264 src
           mkdir build
 
       - name: Configure
@@ -93,7 +98,7 @@ jobs:
     continue-on-error: true
     env:
       VERSION: ${{ github.event.inputs.x265-version }}
-      PREFIX: /opt/ffmpeg
+      PREFIX: ${{ github.event.inputs.prefix }}
       
     steps:
       - name: Get number of CPU cores
@@ -108,11 +113,16 @@ jobs:
             ${{ github.workspace }}/build
             ${{ github.event.inputs.prefix }}
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
-    
+
+      - name: Install build dependency
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          apt-get install -qq -y nasm yasm
+          
       - name: Download sources
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          git clone -b Release_3.5 --depth 1 https://github.com/videolan/x265 src
+          git clone -b ${{ env.VERSION }} --depth 1 https://github.com/videolan/x265 src
           mkdir build
 
       - name: Configure
@@ -148,7 +158,7 @@ jobs:
     continue-on-error: true
     env:
       VERSION: ${{ github.event.inputs.opus-version }}
-      PREFIX: /opt/ffmpeg
+      PREFIX: ${{ github.event.inputs.prefix }}
       
     steps:
       - name: Get number of CPU cores
@@ -167,7 +177,7 @@ jobs:
       - name: Download sources
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          curl -sSL https://archive.mozilla.org/pub/opus/opus-${OPUS_VERSION}.tar.gz -o opus.tar.gz
+          curl -sSL https://archive.mozilla.org/pub/opus/opus-${{ env.VERSION }}.tar.gz -o opus.tar.gz
           tar -xf opus.tar.gz
           rm opus.tar.gz
           mv opus* src
