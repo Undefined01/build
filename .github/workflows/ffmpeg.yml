@@ -221,6 +221,7 @@ jobs:
     env:
       VERSION: ${{ github.event.inputs.ffmpeg-version }}
       PREFIX: ${{ github.event.inputs.prefix }}
+      PKG_CONFIG_PATH: "${{ github.event.inputs.prefix }}/share/pkgconfig:${{ github.event.inputs.prefix }}/lib/pkgconfig:${{ github.event.inputs.prefix }}/lib64/pkgconfig"
       CONFIGURE: >-
         --disable-debug
         --disable-doc
