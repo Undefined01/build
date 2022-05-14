@@ -82,7 +82,7 @@ jobs:
           
       - name: Archive
         run: |
-          tar -cJvf ${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+          tar -cJvf build/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -143,7 +143,7 @@ jobs:
       - name: Archive
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          tar -cJvf ${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+          tar -cJvf build/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -204,7 +204,7 @@ jobs:
       - name: Archive
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          tar -cJvf ${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+          tar -cJvf build/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -267,7 +267,7 @@ jobs:
       - name: Archive
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          tar -cJvf ${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+          tar -cJvf build/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -386,7 +386,7 @@ jobs:
       - name: Archive
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          tar -cJvf ${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+          tar -cJvf build/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
           
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
