@@ -35,7 +35,7 @@ jobs:
     continue-on-error: true
     env:
       VERSION: ${{ github.event.inputs.x264-version }}
-      PREFIX: ${{ github.event.inputs. }}
+      PREFIX: ${{ github.event.inputs.prefix }}
       
     steps:
       - name: Get number of CPU cores
