@@ -66,7 +66,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          ../src/configure --prefix=${{ env.PREFIX }} --enable-static --disable-cli
+          ../src/configure --prefix=${{ env.PREFIX }} --enable-shared --disable-cli
           
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
@@ -189,7 +189,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          ../src/configure --prefix=${PREFIX} --enable-static
+          ../src/configure --prefix=${PREFIX} --enable-shared
           
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
@@ -298,11 +298,8 @@ jobs:
         --enable-gpl
         --enable-version3
         --enable-nonfree
-        --disable-shared
         --enable-static
         --pkg-config-flags="--static"
-        --extra-cflags="-I${{ github.event.inputs.prefix }}/include -static"
-        --extra-ldflags="-L${{ github.event.inputs.prefix }}/lib -static"
         --prefix="${{ github.event.inputs.prefix }}"
         --disable-libxcb
         --enable-libopus
