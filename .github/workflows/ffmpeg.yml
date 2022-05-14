@@ -253,7 +253,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          cmake ../src -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} 
+          cmake ../src -DCMAKE_BUILD_TYPE=Release -DENABLE_CLI=OFF -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} 
           
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
@@ -299,7 +299,6 @@ jobs:
         --enable-version3
         --enable-nonfree
         --enable-static
-        --pkg-config-flags="--static"
         --prefix="${{ github.event.inputs.prefix }}"
         --disable-libxcb
         --enable-libopus
