@@ -54,7 +54,7 @@ jobs:
       - name: Install build dependency
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          apt-get install -qq -y nasm yasm
+          sudo apt-get install -qq -y nasm yasm
           
       - name: Download sources
         if: steps.cache.outputs.cache-hit != 'true'
@@ -117,7 +117,7 @@ jobs:
       - name: Install build dependency
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          apt-get install -qq -y nasm yasm
+          sudo apt-get install -qq -y nasm yasm
           
       - name: Download sources
         if: steps.cache.outputs.cache-hit != 'true'
