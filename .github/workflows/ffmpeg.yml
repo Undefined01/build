@@ -133,12 +133,19 @@ jobs:
         working-directory: src/build/linux
         run: |
           cmake ../../source -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} -DENABLE_SHARED:BOOL=OFF -DSTATIC_LINK_CRT:BOOL=ON -DENABLE_CLI:BOOL=OFF
+          sed -i 's/-lgcc_s/-lgcc_eh/g' x265.pc
           
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: src/build/linux
         run: |
-          make -j${{ steps.cpu-cores.outputs.count }} install
+          make -j${{ steps.cpu-cores.outputs.count }}
+          
+      - name: Install
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: src/build/linux
+        run: |
+          make install
           
       - name: Archive
         if: steps.cache.outputs.cache-hit != 'true'
@@ -305,6 +312,7 @@ jobs:
         --disable-libxcb
         --enable-libopus
         --enable-libx264
+        --enable-libx265
         --enable-libsvtav1
 
     steps:
@@ -322,35 +330,35 @@ jobs:
           key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
        
       - name: Download x264
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
           name: x264
           path: ${{ env.PREFIX }}
        
       - name: Download x265
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
           name: x265
           path: ${{ env.PREFIX }}
 
       - name: Download svtav1
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
           name: svtav1
           path: ${{ env.PREFIX }}
 
       - name: Download opus
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
           name: opus
           path: ${{ env.PREFIX }}
       
       - name: Extract
-        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         working-directory: ${{ env.PREFIX }}
         run: |
           tar -xJf x264.tar.xz
