@@ -1,0 +1,383 @@
+name: FFmpeg
+
+on:
+  workflow_dispatch:
+    inputs:
+      ffmpeg-version:
+        description: The version of FFmpeg
+        required: true
+        default: 5.0.1
+      x264-version:
+        description: The version of FFmpeg
+        required: true
+        default: stable
+      x265-version:
+        description: The version of FFmpeg
+        required: true
+        default: Release_3.5
+      opus-version:
+        description: The version of FFmpeg
+        required: true
+        default: 1.3.1
+      prefix:
+        description: The prefix path of FFmpeg
+        required: true
+        default: /opt/ffmpeg
+      cache_id:
+        description: The build id for caches
+        required: true
+        default: "1"
+
+jobs:
+  x264:
+    name: "${{ github.job }}"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      VERSION: ${{ github.event.inputs.x264-version }}
+      PREFIX: /opt/ffmpeg
+      
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+    
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ${{ github.workspace }}/src
+            ${{ github.workspace }}/build
+            ${{ github.event.inputs.prefix }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+          
+      - name: Download sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          git clone -b stable --depth 1 https://code.videolan.org/videolan/x264 src
+          mkdir build
+
+      - name: Configure
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          ../src/configure --prefix=${{ env.PREFIX }} --enable-shared --enable-pic --disable-cli
+          
+      - name: Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }}
+      
+      - name: Install
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          make install
+          
+      - name: Archive
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}
+          path: /tmp/${{ github.job }}.tar.xz
+          retention-days: 3
+          
+  x265:
+    name: "${{ github.job }}"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      VERSION: ${{ github.event.inputs.x265-version }}
+      PREFIX: /opt/ffmpeg
+      
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+    
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ${{ github.workspace }}/src
+            ${{ github.workspace }}/build
+            ${{ github.event.inputs.prefix }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+    
+      - name: Download sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          git clone -b Release_3.5 --depth 1 https://github.com/videolan/x265 src
+          mkdir build
+
+      - name: Configure
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: src/build/linux
+        run: |
+          sed -i "/-DEXTRA_LIB/ s/$/ -DCMAKE_INSTALL_PREFIX=\$${{ env.PREFIX }}/" multilib.sh
+          sed -i "/^cmake/ s/$/ -DENABLE_CLI=OFF/" multilib.sh
+          ./multilib.sh
+          
+      - name: Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: src/build/linux
+        run: |
+          make -C 8bit -j${{ steps.cpu-cores.outputs.count }} install
+          
+      - name: Archive
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}
+          path: /tmp/${{ github.job }}.tar.xz
+          retention-days: 3
+
+  opus:
+    name: "${{ github.job }}"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      VERSION: ${{ github.event.inputs.opus-version }}
+      PREFIX: /opt/ffmpeg
+      
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+    
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ${{ github.workspace }}/src
+            ${{ github.workspace }}/build
+            ${{ github.event.inputs.prefix }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+    
+      - name: Download sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL https://archive.mozilla.org/pub/opus/opus-${OPUS_VERSION}.tar.gz -o opus.tar.gz
+          tar -xf opus.tar.gz
+          rm opus.tar.gz
+          mv opus* src
+          mkdir build
+
+      - name: Configure
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          ../src/configure --prefix="${PREFIX}" --enable-shared
+          
+      - name: Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }}
+          
+      - name: Install
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          make install
+          
+      - name: Archive
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}
+          path: /tmp/${{ github.job }}.tar.xz
+          retention-days: 3
+          
+  ffmpeg:
+    name: "${{ github.job }}"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    needs: [x264, x265, opus]
+
+    env:
+      VERSION: ${{ github.event.inputs.ffmpeg-version }}
+      PREFIX: ${{ github.event.inputs.prefix }}
+      CONFIGURE: >-
+        --disable-debug
+        --disable-doc
+        --disable-ffplay
+        --enable-gpl
+        --enable-libopus
+        --enable-libx264
+        --enable-libx265
+        --enable-shared
+        --enable-small
+        --enable-version3
+        --extra-cflags="-I${{ github.event.inputs.sysroot }}/include"
+        --extra-ldflags="-L${{ github.event.inputs.sysroot }}/lib"
+        --extra-libs=-ldl
+        --extra-libs=-lpthread
+        --prefix="${{ github.event.inputs.sysroot }}"
+
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+    
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ${{ github.workspace }}/src
+            ${{ github.workspace }}/build
+            ${{ github.event.inputs.prefix }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+       
+      - name: Download x264
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: x264
+          path: ${{ env.PREFIX }}
+
+      - name: Download x265
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: x265
+          path: ${{ env.PREFIX }}
+
+      - name: Download opus
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v3
+        with:
+          name: opus
+          path: ${{ env.PREFIX }}
+      
+      - name: Extract
+        if: steps.cache_sysroot.outputs.cache-hit != 'true'
+        working-directory: ${{ env.PREFIX }}
+        run: |
+          tar -xJf x264.tar.xz
+          tar -xJf x265.tar.xz
+          tar -xJf opus.tar.xz
+          rm *.tar.xz
+
+      - name: Download sources
+        run: |
+          curl -sSL https://ffmpeg.org/releases/ffmpeg-${VERSION}.tar.bz2 -o ffmpeg.tar.bz2
+          tar -xf ffmpeg.tar.bz2
+
+      - name: Configure
+        working-directory: build
+        run: |
+          ../src/configure ${{ env.SRC }} ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
+          
+      - name: Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }}
+          
+      - name: Install
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          make install
+          
+      - name: Archive
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: /opt
+        run: |
+          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          path: ${{ env.BUILD }}/install
+
+  opencvsharp:
+    strategy:
+      matrix:
+        include:
+          - name: macos_amd64
+            os: macos-latest
+            OPENCV_LIB: lib/cmake/opencv4
+          - name: linux_amd64
+            os: ubuntu-latest
+            OPENCV_LIB: lib/cmake/opencv4
+          - name: windows_amd64
+            os: windows-latest
+            OPENCV_LIB: x64/vc16/staticlib
+
+    name: "OpenCvSharp ${{ matrix.name }}"
+    needs: opencv
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    env:
+      VERSION: ${{ github.event.inputs.opencvsharp-version }}
+      SRC: ${{ github.workspace }}/opencvsharp
+      BUILD: ${{ github.workspace }}/build
+      OPENCV: ${{ github.workspace }}/opencv
+      OPENCV_LIB: ${{ github.workspace }}/opencv/${{ matrix.OPENCV_LIB }}
+      OPENCV_VERSION: ${{ github.event.inputs.opencv-version }}
+      CONFIGURE: >-
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_INSTALL_PREFIX=install
+      EXTRA_CONFIGURE: ${{ matrix.EXTRA_CONFIGURE }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: shimat/opencvsharp
+          ref: ${{ env.VERSION }}
+          path: ${{ env.SRC }}
+
+      - name: Download OpenCV build
+        uses: actions/download-artifact@v3
+        with:
+          name: opencv-${{ env.OPENCV_VERSION }}-${{ matrix.name }}
+          path: ${{ env.OPENCV }}
+
+      - name: Remove unused sources
+        working-directory: ${{ env.SRC }}/src/OpenCvSharpExtern
+        shell: bash
+        run: |
+          rm aruco.cpp bgsegm.cpp calib3d.cpp cuda.cpp dnn.cpp dnn_superres.cpp \
+            face.cpp features2d.cpp flann.cpp highgui.cpp img_hash.cpp line_descriptor.cpp \
+            ml.cpp objdetect.cpp optflow.cpp photo.cpp quality.cpp shape.cpp stitching.cpp \
+            superres.cpp text.cpp tracking.cpp video.cpp videoio.cpp xfeatures2d.cpp ximgproc.cpp xphoto.cpp \
+            std_vector.cpp std_string.cpp
+          sed -i'' -e '38,77d' include_opencv.h
+          sed -i'' -e '32,36d' include_opencv.h
+          ls *.cpp
+      - name: Configure with CMake
+        run: |
+          mkdir ${{ env.BUILD }}
+          cd ${{ env.BUILD }}
+          cmake ${{ env.SRC }}/src/OpenCvSharpExtern ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
+        env:
+          OpenCV_DIR: ${{ env.OPENCV_LIB }}
+
+      - name: Build
+        working-directory: ${{ env.BUILD }}
+        run: |
+          cmake --build . --target install --config Release
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
+          path: ${{ env.BUILD }}/install
