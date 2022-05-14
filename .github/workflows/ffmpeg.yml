@@ -135,10 +135,6 @@ jobs:
         working-directory: src/build/linux
         run: |
           make -j${{ steps.cpu-cores.outputs.count }} install
-          echo find build
-          find . -name *.pc
-          echo find src
-          find ../src -name *.pc
           
       - name: Archive
         if: steps.cache.outputs.cache-hit != 'true'
@@ -279,7 +275,6 @@ jobs:
   ffmpeg:
     name: "${{ github.job }}"
     runs-on: ubuntu-latest
-    continue-on-error: true
     needs: [x264, x265, svtav1, opus]
 
     env:
