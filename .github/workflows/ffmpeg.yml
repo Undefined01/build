@@ -136,6 +136,7 @@ jobs:
         working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }} install
+          find . -name *.pc
           
       - name: Archive
         if: steps.cache.outputs.cache-hit != 'true'
