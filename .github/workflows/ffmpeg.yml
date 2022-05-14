@@ -81,15 +81,15 @@ jobs:
           make install
           
       - name: Archive
-        working-directory: /opt
+        working-directory: build
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+          tar -cJvf ${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}
-          path: /tmp/${{ github.job }}.tar.xz
+          path: build/${{ github.job }}.tar.xz
           retention-days: 3
           
   x265:
@@ -129,27 +129,25 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: src/build/linux
         run: |
-          sed -i "/-DEXTRA_LIB/ s/$/ -DCMAKE_INSTALL_PREFIX=\$${{ env.PREFIX }}/" multilib.sh
-          sed -i "/^cmake/ s/$/ -DENABLE_CLI=OFF/" multilib.sh
-          ./multilib.sh
+          ./make-Makefiles.bash
           
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: src/build/linux
         run: |
-          make -C 8bit -j${{ steps.cpu-cores.outputs.count }} install
+          make -j${{ steps.cpu-cores.outputs.count }} install
           
       - name: Archive
         if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: /opt
+        working-directory: build
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+          tar -cJvf ${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}
-          path: /tmp/${{ github.job }}.tar.xz
+          path: build/${{ github.job }}.tar.xz
           retention-days: 3
 
   opus:
@@ -203,15 +201,15 @@ jobs:
           
       - name: Archive
         if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: /opt
+        working-directory: build
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+          tar -cJvf ${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
          
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}
-          path: /tmp/${{ github.job }}.tar.xz
+          path: build/${{ github.job }}.tar.xz
           retention-days: 3
           
   ffmpeg:
@@ -308,12 +306,13 @@ jobs:
           
       - name: Archive
         if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: /opt
+        working-directory: build
         run: |
-          tar -cJvf /tmp/${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+          tar -cJvf ${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
           
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.job }}-${{ env.VERSION }}-${{ matrix.name }}
-          path: ${{ env.BUILD }}/install
+          name: ${{ github.job }}
+          path: build/${{ github.job }}.tar.xz
+          retention-days: 3
