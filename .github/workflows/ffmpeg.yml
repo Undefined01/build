@@ -281,6 +281,11 @@ jobs:
           tar -xJf x265.tar.xz
           tar -xJf opus.tar.xz
           rm *.tar.xz
+          
+      - name: Install build dependency
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get install -qq -y nasm yasm
 
       - name: Download sources
         run: |
