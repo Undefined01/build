@@ -286,19 +286,22 @@ jobs:
     env:
       VERSION: ${{ github.event.inputs.ffmpeg-version }}
       PREFIX: ${{ github.event.inputs.prefix }}
-      PKG_CONFIG_PATH: "${{ github.event.inputs.prefix }}/share/pkgconfig:${{ github.event.inputs.prefix }}/lib/pkgconfig:${{ github.event.inputs.prefix }}/lib64/pkgconfig"
+      PKG_CONFIG_PATH: ${{ github.event.inputs.prefix }}/lib/pkgconfig
       CONFIGURE: >-
         --disable-debug
         --disable-doc
         --disable-ffplay
+        --disable-ffprobe
         --enable-gpl
         --enable-version3
         --enable-nonfree
+        --disable-shared
         --enable-static
         --pkg-config-flags="--static"
         --extra-cflags="-I${{ github.event.inputs.prefix }}/include"
         --extra-ldflags="-L${{ github.event.inputs.prefix }}/lib"
         --prefix="${{ github.event.inputs.prefix }}"
+        --disable-libxcb
         --enable-libopus
         --enable-libx264
         --enable-libsvtav1
