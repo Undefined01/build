@@ -369,12 +369,14 @@ jobs:
       - name: Configure
         working-directory: build
         run: |
-          ../src/configure ${{ env.SRC }} ${{ env.CONFIGURE }} ${{ env.EXTRA_CONFIGURE }}
+          export PATH="$PATH:${{ env.PREFIX }}/bin"
+          ../src/configure ${{ env.CONFIGURE }}
           
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
+          export PATH="$PATH:${{ env.PREFIX }}/bin"
           make -j${{ steps.cpu-cores.outputs.count }}
           
       - name: Install
