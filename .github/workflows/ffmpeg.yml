@@ -70,7 +70,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          ../src/configure --prefix=${{ env.PREFIX }} --enable-shared --disable-cli
+          ../src/configure --prefix=${{ env.PREFIX }} --disable-shared --enable-static --disable-cli --disable-opencl --enable-pic
           
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
@@ -132,7 +132,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: src/build/linux
         run: |
-          cmake -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} -DENABLE_CLI=OFF ../../source
+          cmake ../../source -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} -DENABLE_SHARED:BOOL=OFF -DSTATIC_LINK_CRT:BOOL=ON -DENABLE_CLI:BOOL=OFF
           
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
@@ -187,7 +187,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          ../src/configure --prefix=${PREFIX} --enable-shared
+          ../src/configure --prefix=${PREFIX} --disable-shared --enable-static
           
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
@@ -250,7 +250,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: build
         run: |
-          cmake ../src -DCMAKE_BUILD_TYPE=Release -DENABLE_CLI=OFF -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} 
+          cmake ../src -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} -DENABLE_SHARED:BOOL=OFF -DSTATIC_LINK_CRT:BOOL=ON -DENABLE_CLI:BOOL=OFF
           
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
@@ -290,11 +290,14 @@ jobs:
         --disable-doc
         --disable-ffplay
         --disable-ffprobe
+        --prefix="${{ github.event.inputs.prefix }}"
+        --pkg-config-flags="--static"
+        --extra-libs="-lpthread -lm -lz"
+        --extra-ldexeflags="-static"
         --enable-gpl
         --enable-version3
         --enable-nonfree
         --enable-static
-        --prefix="${{ github.event.inputs.prefix }}"
         --disable-libxcb
         --enable-libopus
         --enable-libx264
