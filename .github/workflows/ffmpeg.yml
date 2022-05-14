@@ -280,7 +280,7 @@ jobs:
     name: "${{ github.job }}"
     runs-on: ubuntu-latest
     continue-on-error: true
-    needs: [x264, x265, opus]
+    needs: [x264, svtav1, opus]
 
     env:
       VERSION: ${{ github.event.inputs.ffmpeg-version }}
@@ -300,7 +300,7 @@ jobs:
         --prefix="${{ github.event.inputs.prefix }}"
         --enable-libopus
         --enable-libx264
-        --enable-libx265
+        --enable-libsvtav1
         --extra-libs=-ldl
         --extra-libs=-lpthread
 
@@ -325,11 +325,11 @@ jobs:
           name: x264
           path: ${{ env.PREFIX }}
 
-      - name: Download x265
+      - name: Download svtav1
         if: steps.cache_sysroot.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v3
         with:
-          name: x265
+          name: svtav1
           path: ${{ env.PREFIX }}
 
       - name: Download opus
@@ -344,7 +344,7 @@ jobs:
         working-directory: ${{ env.PREFIX }}
         run: |
           tar -xJf x264.tar.xz
-          tar -xJf x265.tar.xz
+          tar -xJf svtav1.tar.xz
           tar -xJf opus.tar.xz
           rm *.tar.xz
           
