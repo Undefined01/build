@@ -286,6 +286,9 @@ jobs:
         run: |
           curl -sSL https://ffmpeg.org/releases/ffmpeg-${VERSION}.tar.bz2 -o ffmpeg.tar.bz2
           tar -xf ffmpeg.tar.bz2
+          rm ffmpeg.tar.bz2
+          mv ffmpeg* src
+          mkdir build
 
       - name: Configure
         working-directory: build
