@@ -305,7 +305,6 @@ jobs:
         --disable-libxcb
         --enable-libopus
         --enable-libx264
-        --enable-libx265
         --enable-libsvtav1
 
     steps:
