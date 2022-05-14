@@ -132,8 +132,6 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: src/build/linux
         run: |
-          sed -i 's/GIT LIVE REPO VERSION RETRIEVED/GIT LIVE REPO VERSION RETRIEVED \${X265_LATEST_TAG} \${X265_TAG_DISTANCE} \${X265_REVISION_ID}/g' ../../source/cmake/Version.cmake
-          cat ../../source/cmake/Version.cmake
           cmake -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} -DENABLE_CLI=OFF ../../source
           
       - name: Build
