@@ -6,7 +6,7 @@ on:
       ffmpeg-version:
         description: The version of FFmpeg
         required: true
-        default: 5.0.1
+        default: master
       x264-version:
         description: The version of x264
         required: true
@@ -357,10 +357,7 @@ jobs:
 
       - name: Download sources
         run: |
-          curl -sSL https://ffmpeg.org/releases/ffmpeg-${{ env.VERSION }}.tar.bz2 -o ffmpeg.tar.bz2
-          tar -xf ffmpeg.tar.bz2
-          rm ffmpeg.tar.bz2
-          mv ffmpeg* src
+          git clone -b ${{ env.VERSION }} --depth 1 https://git.ffmpeg.org/ffmpeg src
           mkdir build
 
       - name: Configure
