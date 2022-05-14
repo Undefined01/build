@@ -286,23 +286,23 @@ jobs:
       VERSION: ${{ github.event.inputs.ffmpeg-version }}
       PREFIX: ${{ github.event.inputs.prefix }}
       PKG_CONFIG_PATH: "${{ github.event.inputs.prefix }}/share/pkgconfig:${{ github.event.inputs.prefix }}/lib/pkgconfig:${{ github.event.inputs.prefix }}/lib64/pkgconfig"
-      LD_LIBRARY_PATH: "${{ github.event.inputs.prefix }}/lib:${{ github.event.inputs.prefix }}/lib64"
       CONFIGURE: >-
         --disable-debug
         --disable-doc
         --disable-ffplay
         --enable-gpl
+        --enable-version3
+        --enable-nonfree
+        --enable-static
+        --pkg-config-flags="--static"
+        --extra-cflags="-I${{ github.event.inputs.prefix }}/include"
+        --extra-ldflags="-L${{ github.event.inputs.prefix }}/lib"
+        --prefix="${{ github.event.inputs.prefix }}"
         --enable-libopus
         --enable-libx264
         --enable-libx265
-        --enable-shared
-        --enable-small
-        --enable-version3
-        --extra-cflags="-I${{ github.event.inputs.prefix }}/include"
-        --extra-ldflags="-L${{ github.event.inputs.prefix }}/lib"
         --extra-libs=-ldl
         --extra-libs=-lpthread
-        --prefix="${{ github.event.inputs.prefix }}"
 
     steps:
       - name: Get number of CPU cores
