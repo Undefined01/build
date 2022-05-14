@@ -212,6 +212,65 @@ jobs:
           path: build/${{ github.job }}.tar.xz
           retention-days: 3
           
+  svtav1:
+    name: "${{ github.job }}"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      VERSION: ${{ github.event.inputs.opus-version }}
+      PREFIX: ${{ github.event.inputs.prefix }}
+      
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+    
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ${{ github.workspace }}/src
+            ${{ github.workspace }}/build
+            ${{ github.event.inputs.prefix }}
+          key: ${{ github.job }}-${{ runner.os }}-${{ github.event.inputs.cache_id }}
+    
+      - name: Download sources
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth=1 https://gitlab.com/AOMediaCodec/SVT-AV1.git src
+          mkdir build
+
+      - name: Configure
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          cmake ../src -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} 
+          
+      - name: Build
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          make -j${{ steps.cpu-cores.outputs.count }}
+          
+      - name: Install
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          make install
+          
+      - name: Archive
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: build
+        run: |
+          tar -cJvf ${{ github.job }}.tar.xz -C ${{ env.PREFIX }} .
+         
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}
+          path: build/${{ github.job }}.tar.xz
+          retention-days: 3
+          
   ffmpeg:
     name: "${{ github.job }}"
     runs-on: ubuntu-latest
@@ -222,6 +281,7 @@ jobs:
       VERSION: ${{ github.event.inputs.ffmpeg-version }}
       PREFIX: ${{ github.event.inputs.prefix }}
       PKG_CONFIG_PATH: "${{ github.event.inputs.prefix }}/share/pkgconfig:${{ github.event.inputs.prefix }}/lib/pkgconfig:${{ github.event.inputs.prefix }}/lib64/pkgconfig"
+      LD_LIBRARY_PATH: "${{ github.event.inputs.prefix }}/lib:${{ github.event.inputs.prefix }}/lib64"
       CONFIGURE: >-
         --disable-debug
         --disable-doc
