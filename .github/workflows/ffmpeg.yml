@@ -127,14 +127,13 @@ jobs:
 
       - name: Configure
         if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: src/build/linux
+        working-directory: build
         run: |
-          export TERM=linux
-          ./make-Makefiles.bash
+          cmake -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} -DENABLE_CLI=OFF ../src/source
           
       - name: Build
         if: steps.cache.outputs.cache-hit != 'true'
-        working-directory: src/build/linux
+        working-directory: build
         run: |
           make -j${{ steps.cpu-cores.outputs.count }} install
           
